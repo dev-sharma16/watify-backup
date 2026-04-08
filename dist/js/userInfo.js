@@ -51,18 +51,42 @@ function getUserInfo() {
 }
 function setUserInfo(WPP) {
   console.log("🔥 setUserInfo called", WPP);
-
   const userInfo = getUserInfo(); // this already creates default if missing
+
+  // ADD THIS BLOCK right here, before anything else:
+  if (!WPP?.conn) {
+    console.warn("setUserInfo: WPP.conn not ready, retrying in 1.5s...");
+    setTimeout(() => setUserInfo(WPP), 1500);
+    return;
+  }
 
   try {
     const userIdObj = WPP.conn.getMyUserId();
     if (!userIdObj || !userIdObj._serialized) {
-      console.warn("getMyUserId returned invalid object");
-      return; // retry later if needed
+      console.warn("getMyUserId returned invalid object, retrying...");
+      setTimeout(() => setUserInfo(WPP), 1000);
+      return;
     }
 
-    userInfo.userPhone._serialized = userIdObj._serialized.toString();
-    userInfo.userPhone.phone = userIdObj.user?.toString() || "";
+    // userInfo.userPhone._serialized = userIdObj._serialized.toString();
+    // userInfo.userPhone.phone = userIdObj.user?.toString() || "";
+
+    // ✅ ALWAYS use _serialized
+    let raw = userIdObj._serialized; // "918923410359:10@c.us"
+      
+    let phone = raw.split("@")[0].split(":")[0]; // "918923410359"
+      
+    userInfo.userPhone.phone = phone;
+    userInfo.userPhone._serialized = phone + "@c.us";
+
+    // Clean phone: remove quotes, remove :8 device suffix
+    // let rawPhone = (userIdObj.user?.toString() || "")
+    //   .replace(/"/g, "")   // remove any quote characters
+    //   .split(":")[0]        // remove :8 device suffix
+    //   .trim();
+
+    // userInfo.userPhone.phone = rawPhone;
+    // userInfo.userPhone._serialized = rawPhone + "@c.us";
 
     // Profile name (can fail early)
     try {
@@ -77,7 +101,10 @@ function setUserInfo(WPP) {
 
     const token = btoa(userInfo.userPhone._serialized);
     localStorage.setItem("watifyToken", token);
-    chrome.storage.local.set({ watifyToken: token });
+    // chrome.storage.local.set({ watifyToken: token });
+     // ✅ Can't call chrome.storage.local here — bundle runs in MAIN world.
+    // Send to content.js via postMessage bridge; content.js will do the chrome.storage.local.set.
+    window.postMessage({ _saveToken: token }, "*");
 
     console.log("✅ userInfo + token saved", userInfo);
 
@@ -86,6 +113,8 @@ function setUserInfo(WPP) {
 
   } catch (err) {
     console.error("setUserInfo failed", err);
+    // WPP.conn wasn't ready yet — retry in 1.5s
+    setTimeout(() => setUserInfo(WPP), 1500);
   }
 }
 function setUserStatus(key, value) {

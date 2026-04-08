@@ -48,19 +48,53 @@ function changeTheme() {
 }
 
 function _init_(WPP) {
+  // ADD THIS BLOCK right here, before anything else:
+  // if (!WPP?.conn) {
+  //   console.warn("setUserInfo: WPP.conn not ready, retrying in 1.5s...");
+  //   setTimeout(() => setUserInfo(WPP), 1500);
+  //   return;
+  // }
   setUserInfo(window.WPP);
   changeTheme();
-  const userInfo = getUserInfo();
+  // const userInfo = getUserInfo();
+  setTimeout(() => {
+    const userInfo = getUserInfo();
+    console.log("_init_ userInfo (AFTER FIX)", userInfo);
+    
+    const userStatus = userInfo?.status || {};
+    if (userStatus.blurUserNames) manageBlur("blurUserNames", true);
+    if (userStatus.blurProfile) manageBlur("blurProfile", true);
+    if (userStatus.blurMessages) manageBlur("blurMessages", true);
+    
+    if (userInfo?.userPhone?.phone) {
+      window.postMessage(
+        {
+          loginUser: {
+            phone: userInfo.userPhone.phone,
+            name: userInfo.userName,
+          },
+        },
+        "*"
+      );
+    }
+  }, 1500);
   console.log("_init_ userInfo", userInfo);
   const userStatus = userInfo?.status || {};
   if (userStatus.blurUserNames) manageBlur("blurUserNames", true);
   if (userStatus.blurProfile) manageBlur("blurProfile", true);
   if (userStatus.blurMessages) manageBlur("blurMessages", true);
 
-  window.postMessage(
-    { loginUser: { phone: userInfo.userPhone.phone, name: userInfo.userName } },
-    "*"
-  );
+  // window.postMessage(
+  //   { loginUser: { phone: userInfo.userPhone.phone, name: userInfo.userName } },
+  //   "*"
+  // );
+  // AFTER:
+  if (userInfo?.userPhone?.phone) {
+    window.postMessage(
+      { loginUser: { phone: userInfo.userPhone.phone, name: userInfo.userName } },
+      "*"
+    );
+  }
 }
 
 async function shootBulkCamp(message) {

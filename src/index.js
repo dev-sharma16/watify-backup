@@ -5,6 +5,9 @@ console.log("Index file sctarted....");
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "getUserInfo") {
     const userInfoStr = localStorage.getItem("userInfo");
+    // const userInfoStr = chrome.storage.local.get(["userInfo"], (result) => {
+    //   console.log("Popup userInfo:", result.userInfo);
+    // });
     sendResponse({ 
       userInfo: userInfoStr ? JSON.parse(userInfoStr) : null 
     });
@@ -13,10 +16,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-function getToken() {
+// function getToken() {
+//   return new Promise((resolve) => {
+//     chrome.storage.local.get("watifyToken", (result) => {
+//       resolve(result.watifyToken);
+//     });
+//   });
+// }
+
+async function getToken() {
+  // Try localStorage first (WhatsApp tab context)
+  const lsToken = localStorage.getItem("watifyToken");
+  if (lsToken) return lsToken;
+
+  // Fallback: try chrome.storage.local (extension tab context)
   return new Promise((resolve) => {
     chrome.storage.local.get("watifyToken", (result) => {
-      resolve(result.watifyToken);
+      resolve(result.watifyToken || null);
     });
   });
 }
@@ -30,6 +46,7 @@ async function waitForToken() {
       await new Promise((res) => setTimeout(res, 300));
     }
   }
+  return token; // ✅ add this
 }
 
 console.log("SEcond log in index");
@@ -44,10 +61,14 @@ async function loginUser(phone, name) {
   const data = await response.text();
   const userLogin = JSON.parse(data);
   console.log("index login-->", JSON.parse(data));
+  
+  // ✅ Save to BOTH storages so both tabs can read it
+  localStorage.setItem("watifyToken", userLogin.instanceId);
+  chrome.storage.local.set({ watifyToken: userLogin.instanceId }); // ADD THIS LINE
+
   window.postMessage({ message: { saveToken: userLogin.instanceId } }, "*");
   const userPlan = await fetchUserPlan(userLogin.instanceId);
   window.postMessage({ message: { setUserPlan: userPlan } }, "*");
-  chrome.storage.local.set({ watifyToken: userLogin.instanceId });
 }
 
 async function saveAnalytics(data) {

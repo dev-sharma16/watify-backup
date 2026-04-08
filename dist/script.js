@@ -39,6 +39,9 @@ function sendUserInfo() {
 }
 
 async function loginUser(phone, name, extensionId) {
+  console.log("User name ->", name);
+  console.log("User phone ->", phone);
+  console.log("extension id ->", extensionId);
   const response = await fetch(
     `https://watify.io/checkPlan?loginUser=1&phone=${phone}&name=${name}&extensionId=${extensionId}`,
     { method: "GET" }
@@ -50,8 +53,7 @@ async function loginUser(phone, name, extensionId) {
 
 function initBlur(status) {
   console.log("Theme status-->", status);
-  
-  if (!status) return; // ✅ null check
+  if (!status) return;
   if (status.theme === "dark") {
     document.getElementById("darkMode").checked = true;
     notify(chrome.runtime, { manageUi: { ui: "darkMode", value: "dark" } });
@@ -75,10 +77,22 @@ function initBlur(status) {
 }
 
 async function checkUserLogin(phone, name) {
+  // ✅ Strip quotes and :8 device suffix defensively
+  phone = (phone || "").replace(/"/g, "").split(":")[0].trim();
+  name = (name || "").replace(/"/g, "").trim();
+
+  console.log("checkUserLogin cleaned phone -->", phone);
+  console.log("checkUserLogin cleaned name -->", name);
+
+  if (!phone) {
+    console.warn("checkUserLogin: phone is empty, aborting");
+    return false;
+  }
+
   const userLogin = await loginUser(phone, name, chrome.runtime.id);
   console.log("Script userLogin", userLogin);
 
-  if (phone != "" && userLogin.status == 200) return userLogin.instanceId;
+  if (userLogin.status == 200) return userLogin.instanceId;
 
   document.getElementById("home-tab")?.remove();
   document.getElementById("myTab")?.remove();
@@ -123,17 +137,28 @@ async function initPopup(data) {
   );
   if (!isLoggedIn) return;
 
-  localStorage.setItem("watifyToken", isLoggedIn);
-  chrome.storage.local.set({ watifyToken: isLoggedIn });
+  console.log("✅ Token received from server:", isLoggedIn);
 
-  const [tab] = await chrome.tabs.query({ url: "https://web.whatsapp.com/*" }); // ✅ reliable tab query
-  if (!tab) return;
+  // ✅ Save to both storages so both tabs can read it
+  localStorage.setItem("watifyToken", isLoggedIn);
+  chrome.storage.local.set({ watifyToken: isLoggedIn }, () => {
+    console.log("✅ Token saved to chrome.storage.local");
+  });
+
+  const [tab] = await chrome.tabs.query({ url: "https://web.whatsapp.com/*" });
+  if (!tab) {
+    console.warn("No WhatsApp tab found to send token to");
+    return;
+  }
+  console.log("Sending saveToken to WhatsApp tab:", tab.id);
   await chrome.tabs.sendMessage(tab.id, { message: { saveToken: isLoggedIn } });
   showTools();
 }
 
 // ✅ DOMContentLoaded with retry logic
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("chrome runtime -->", chrome.runtime.id);
+
   chrome.tabs.query({ url: "https://web.whatsapp.com/*" }, async (tabs) => {
     if (!tabs.length) {
       console.log("No WhatsApp tab found");
@@ -142,8 +167,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const tab = tabs[0];
+    console.log("WhatsApp tab found:", tab.id);
 
     const userInfo = await tryGetUserInfo(tab.id);
+    console.log("userInfo from WhatsApp tab:", userInfo);
 
     if (userInfo) {
       initPopup({ userInfo });

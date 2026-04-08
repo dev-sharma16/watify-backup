@@ -519,6 +519,10 @@ function waitAndSaveUserInfo(attempts) {
         };
       }
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      // window.postMessage({
+      //   type: "SAVE_USER_INFO",
+      //   data: userInfo
+      // }, "*");
       console.log("✅ [Watify] userInfo saved:", userInfo);
     }
   } catch (e) {
