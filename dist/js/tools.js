@@ -1,5 +1,23 @@
 import { setUserStatus, getUserInfo } from "./userInfo.js";
 
+function waitForElement(selector, callback) {
+  const el = document.querySelector(selector);
+  if (el) return callback(el);
+
+  const observer = new MutationObserver(() => {
+    const el = document.querySelector(selector);
+    if (el) {
+      observer.disconnect();
+      callback(el);
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
 function setDarkMode() {
   //mark dark mode enabled true;
   // const checkBox = document.getElementById("darkMode");
@@ -38,23 +56,72 @@ function toggleTheme(init = false, themeValue = false) {
     else setDarkMode();
   }
 }
+let blurInterval = null;
+let hoveredElements = new Set(); // Track which elements are being hovered
+
+function applyBlurToAll() {
+  document
+    .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
+    .forEach(el => {
+      if (!hoveredElements.has(el)) { // ← Don't blur hovered elements
+        el.style.filter = "blur(6px)";
+      }
+    });
+}
+
+function attachHoverListeners() {
+  document
+    .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
+    .forEach(el => {
+      if (el._blurListenersAttached) return; // Avoid duplicate listeners
+      el._blurListenersAttached = true;
+
+      el.addEventListener("mouseenter", () => {
+        hoveredElements.add(el);
+        el.style.filter = ""; // Remove blur on hover
+      });
+
+      el.addEventListener("mouseleave", () => {
+        hoveredElements.delete(el);
+        el.style.filter = "blur(6px)"; // Re-blur when cursor leaves
+      });
+    });
+}
 
 function manageBlur(blurItem, blur = false) {
-  // const chatList = document.querySelector('[aria-label="Chat list"]');
   const chatList = document.querySelector('#app');
-  const msgMain = document.querySelector("#main");
-
   if (blur) {
     chatList.classList.add(blurItem);
-    if (msgMain !== null && msgMain !== undefined)
-      msgMain.classList.add(blurItem);
-    // document.getElementById(blurItem).checked = true;
   } else {
     chatList.classList.remove(blurItem);
-    if (msgMain !== null && msgMain !== undefined)
-      msgMain.classList.remove(blurItem);
-    // document.getElementById(blurItem).checked = false;
   }
+
+  // 🔥 SPECIAL HANDLING FOR blurConversation
+  if (blurItem === "blurConversation") {
+    if (blur) {
+      applyBlurToAll();
+      attachHoverListeners(); // ← Attach hover on/off listeners
+
+      blurInterval = setInterval(() => {
+        applyBlurToAll();
+        attachHoverListeners(); // ← Re-attach for any new messages loaded
+      }, 500);
+
+    } else {
+      clearInterval(blurInterval);
+      blurInterval = null;
+      hoveredElements.clear(); // ← Reset hover tracking
+
+      // Remove blur and clean up listeners
+      document
+        .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
+        .forEach(el => {
+          el.style.filter = "";
+          el._blurListenersAttached = false; // Allow re-attaching next time
+        });
+    }
+  }
+
   setUserStatus(blurItem, blur);
 }
 

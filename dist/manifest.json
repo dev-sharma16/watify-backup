@@ -21,20 +21,17 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://web.whatsapp.com/*"],
-      "js": ["listener.js", "index.js"],
-      "run_at": "document_idle"
-    },
-    {
       "matches": ["https://*.digitalprominds.com/*"],
       "js": ["index.js"],
       "run_at": "document_start"
     },
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "js": ["listener.js", "index.js", "content.js"],
+      "css": ["style.css"],
+      "run_at": "document_idle"
     }
+    
   ],
   "web_accessible_resources": [
     {

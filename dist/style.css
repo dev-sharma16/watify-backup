@@ -955,6 +955,11 @@ p {
   filter: blur(4px) !important;
   transition: filter 0.2s ease-in-out;
 }
+/* #main.blurConversation div[role="row"] div[tabindex="-1"] { */
+  /* filter: blur(6px) !important; */
+  /* will-change: filter; */
+/* } */
+/* #main.blurConversation div[role="row"] div[tabindex="-1"] .x78zum5 ._ao3e, */
 
 .blurMessages ._ak1r .copyable-text {
   color: #686868 !important;
