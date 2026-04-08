@@ -31,10 +31,18 @@ window.addEventListener("message", (event) => {
 
 // Listen from popup/background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Handle getUserInfo from popup
   if (request.type === "getUserInfo") {
     chrome.storage.local.get(["userInfo"], (result) => {
       sendResponse({ userInfo: result.userInfo || null });
     });
-    return true;
+    return true; // keep channel open for async sendResponse
+  }
+
+  // ✅ THE MISSING BRIDGE: forward { message } payloads from popup into the page
+  // popup calls chrome.tabs.sendMessage(tabId, { message: { manageUi/saveToken/sendMsg/... } })
+  // inject.js and bundle.js listen for window.postMessage({ message: ... }) in the page
+  if (request.message) {
+    window.postMessage({ message: request.message }, "*");
   }
 });

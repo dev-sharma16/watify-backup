@@ -60,12 +60,12 @@ function _init_(WPP) {
   setTimeout(() => {
     const userInfo = getUserInfo();
     console.log("_init_ userInfo (AFTER FIX)", userInfo);
-    
+
     const userStatus = userInfo?.status || {};
     if (userStatus.blurUserNames) manageBlur("blurUserNames", true);
     if (userStatus.blurProfile) manageBlur("blurProfile", true);
     if (userStatus.blurMessages) manageBlur("blurMessages", true);
-    
+
     if (userInfo?.userPhone?.phone) {
       window.postMessage(
         {
@@ -78,11 +78,11 @@ function _init_(WPP) {
       );
     }
   }, 1500);
-  console.log("_init_ userInfo", userInfo);
-  const userStatus = userInfo?.status || {};
-  if (userStatus.blurUserNames) manageBlur("blurUserNames", true);
-  if (userStatus.blurProfile) manageBlur("blurProfile", true);
-  if (userStatus.blurMessages) manageBlur("blurMessages", true);
+  // console.log("_init_ userInfo", userInfo);
+  // const userStatus = userInfo?.status || {};
+  // if (userStatus.blurUserNames) manageBlur("blurUserNames", true);
+  // if (userStatus.blurProfile) manageBlur("blurProfile", true);
+  // if (userStatus.blurMessages) manageBlur("blurMessages", true);
 
   // window.postMessage(
   //   { loginUser: { phone: userInfo.userPhone.phone, name: userInfo.userName } },

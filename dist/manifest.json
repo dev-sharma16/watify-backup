@@ -29,6 +29,11 @@
       "matches": ["https://*.digitalprominds.com/*"],
       "js": ["index.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
     }
   ],
   "web_accessible_resources": [
