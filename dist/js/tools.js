@@ -18,42 +18,53 @@ function waitForElement(selector, callback) {
   });
 }
 
-function setDarkMode() {
-  //mark dark mode enabled true;
-  // const checkBox = document.getElementById("darkMode");
-  // checkBox.checked = true;
+function setDarkMode(isManualToggle = false) {
+  try {
+    localStorage.setItem("theme", '"dark"');
+    localStorage.setItem("system-theme-mode", "false");
+  } catch (e) {}
 
-  //add dark class to body
-  const body = document.querySelector("body");
-  body.classList.add("dark");
   setUserStatus("theme", "dark");
+  
+  if (isManualToggle) {
+    window.location.reload();
+  } else {
+    const body = document.querySelector("body");
+    if (body && !body.classList.contains("dark")) body.classList.add("dark");
+    if (!document.documentElement.classList.contains("dark")) document.documentElement.classList.add("dark");
+  }
 }
 
-function setLightMode() {
-  //mark dark mode enabled false;
-  // const checkBox = document.getElementById("darkMode");
-  // checkBox.checked = false;
-
-  //remove dark class from body
-  const body = document.querySelector("body");
-  body.classList.remove("dark");
+function setLightMode(isManualToggle = false) {
+  try {
+    localStorage.setItem("theme", '"light"');
+    localStorage.setItem("system-theme-mode", "false");
+  } catch (e) {}
 
   setUserStatus("theme", "light");
+  
+  if (isManualToggle) {
+    window.location.reload();
+  } else {
+    const body = document.querySelector("body");
+    if (body) body.classList.remove("dark");
+    document.documentElement.classList.remove("dark");
+  }
 }
 
 function toggleTheme(init = false, themeValue = false) {
   if (init) {
     const theme = getItemFromStorage("theme");
-    if (theme === "dark") setDarkMode();
-    else setLightMode();
+    if (theme === "dark") setDarkMode(false);
+    else setLightMode(false);
   } else if (themeValue) {
-    if (themeValue == "dark") setDarkMode();
-    else setLightMode();
+    if (themeValue === "dark") setDarkMode(true);
+    else setLightMode(true);
   } else {
     const theme = getCurrentTheme();
     // console.log("theme", theme);
-    if (theme === "dark") setLightMode();
-    else setDarkMode();
+    if (theme === "dark") setLightMode(true);
+    else setDarkMode(true);
   }
 }
 let blurInterval = null;
@@ -64,7 +75,7 @@ function applyBlurToAll() {
     .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
     .forEach(el => {
       if (!hoveredElements.has(el)) { // ← Don't blur hovered elements
-        el.style.filter = "blur(6px)";
+        el.style.filter = "blur(8px)";
       }
     });
 }
@@ -127,7 +138,7 @@ function manageBlur(blurItem, blur = false) {
 
 function getCurrentTheme() {
   const body = document.querySelector("body");
-  return body.classList.contains("dark") ? "dark" : "light";
+  return document.documentElement.classList.contains("dark") || body.classList.contains("dark") ? "dark" : "light";
 }
 
 function getItemFromStorage(key) {

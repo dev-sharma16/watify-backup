@@ -510,8 +510,25 @@ function waitAndSaveUserInfo(attempts) {
       userInfo.userName = name;
       userInfo.userPhone = { phone, _serialized: phone + "@c.us" };
       if (!userInfo.status) {
+        let currentTheme = "light";
+        try {
+          const waThemeRaw = localStorage.getItem("theme");
+          if (waThemeRaw) {
+            const waTheme = JSON.parse(waThemeRaw);
+            if (waTheme === "dark") {
+              currentTheme = "dark";
+            } else if (waTheme === "system") {
+              currentTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+            } else {
+              currentTheme = "light";
+            }
+          } else {
+            currentTheme = document.documentElement.classList.contains("dark") || document.body.classList.contains("dark") ? "dark" : "light";
+          }
+        } catch (e) {}
+
         userInfo.status = {
-          theme: document.body.getAttribute("data-theme") || "light",
+          theme: currentTheme,
           blurUserNames: false,
           blurMessages: false,
           blurProfile: false,

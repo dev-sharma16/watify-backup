@@ -56,23 +56,18 @@ function initBlur(status) {
   if (!status) return;
   if (status.theme === "dark") {
     document.getElementById("darkMode").checked = true;
-    notify(chrome.runtime, { manageUi: { ui: "darkMode", value: "dark" } });
   }
   if (status.blurUserNames) {
     document.getElementById("blurUserNames").checked = true;
-    notify(chrome.runtime, { manageUi: { ui: "blurUserNames", value: true } });
   }
   if (status.blurMessages) {
     document.getElementById("blurMessages").checked = true;
-    notify(chrome.runtime, { manageUi: { ui: "blurMessages", value: true } });
   }
   if (status.blurProfile) {
     document.getElementById("blurProfile").checked = true;
-    notify(chrome.runtime, { manageUi: { ui: "blurProfile", value: true } });
   }
   if (status.blurConversation) {
     document.getElementById("blurConversation").checked = true;
-    notify(chrome.runtime, { manageUi: { ui: "blurConversation", value: true } });
   }
 }
 

@@ -73,8 +73,17 @@
   function changeTheme() {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-      const theme = userInfo?.status?.theme;
-      if (!theme) return;
+      let theme = userInfo?.status?.theme;
+
+      // If no userInfo yet, read WhatsApp's own stored theme
+      if (!theme) {
+        try { 
+          theme = JSON.parse(localStorage.getItem("theme"));
+          console.log("Current Theme ->", theme)
+        } catch(e) {}
+        theme = theme || document.body.getAttribute("data-color-scheme") || "light";
+      }
+
       const body = document.querySelector("body");
       if (theme === "dark") body.classList.add("dark");
       else body.classList.remove("dark");
@@ -243,7 +252,21 @@
         userInfo.userName = name;
         userInfo.userPhone = { phone, _serialized: phone + "@c.us" };
         if (!userInfo.status) {
-          userInfo.status = { theme: document.body.getAttribute("data-theme") || "light", blurUserNames: false, blurMessages: false, blurProfile: false, blurConversation: false };
+          userInfo.status = { 
+            theme: (() => {
+              try {
+                const waTheme = localStorage.getItem("theme");
+                if (waTheme) return JSON.parse(waTheme); // stored as '"dark"' or '"light"'
+              } catch(e) {}
+              return document.body.getAttribute("data-color-scheme") || 
+                      document.body.getAttribute("data-theme") || 
+                      (document.body.classList.contains("dark") ? "dark" : "light");
+            })(),
+            blurUserNames: false,
+            blurMessages: false,
+            blurProfile: false,
+            blurConversation: false 
+          };
         }
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
         console.log("✅ [inject.js] userInfo saved:", userInfo);
@@ -271,7 +294,33 @@
       }
       const msg = event.data.message;
       if (!msg) return;
-      if (msg.manageUi) window.postMessage({ manageUiForward: msg.manageUi }, "*");
+      // AFTER (correct — execute the theme/blur change directly in the WA tab):
+      if (msg.manageUi) {
+        const { ui, value } = msg.manageUi;
+        if (ui === "darkMode") {
+          // Toggle: if value is empty string it's a toggle, if "dark"/"light" it's explicit
+          const body = document.querySelector("body");
+          const isDark = body.classList.contains("dark");
+          const goingDark = value ? (value === "dark") : !isDark;
+          if (goingDark) {
+            body.classList.add("dark");
+            // persist to userInfo
+            try {
+              const info = JSON.parse(localStorage.getItem("userInfo") || "{}");
+              if (info.status) { info.status.theme = "dark"; localStorage.setItem("userInfo", JSON.stringify(info)); }
+            } catch(e) {}
+          } else {
+            body.classList.remove("dark");
+            try {
+              const info = JSON.parse(localStorage.getItem("userInfo") || "{}");
+              if (info.status) { info.status.theme = "light"; localStorage.setItem("userInfo", JSON.stringify(info)); }
+            } catch(e) {}
+          }
+        } else {
+          // blur actions — keep existing forward for bundle.js to handle
+          window.postMessage({ manageUiForward: msg.manageUi }, "*");
+        }
+      }
       if (msg.sendMsg === "BulkCamp") handleBulkCamp(msg);
       if (msg.sendMsg === "ShootMsg") handleShootMsg(msg);
       if (msg.saveToken) {

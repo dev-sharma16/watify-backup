@@ -55,7 +55,7 @@ function _init_(WPP) {
   //   return;
   // }
   setUserInfo(window.WPP);
-  changeTheme();
+  // changeTheme();
   // const userInfo = getUserInfo();
   setTimeout(() => {
     const userInfo = getUserInfo();
