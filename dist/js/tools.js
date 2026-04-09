@@ -75,7 +75,7 @@ function applyBlurToAll() {
     .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
     .forEach(el => {
       if (!hoveredElements.has(el)) { // ← Don't blur hovered elements
-        el.style.filter = "blur(8px)";
+        el.style.filter = "blur(10px) grayscale(100%)";
       }
     });
 }
@@ -87,14 +87,23 @@ function attachHoverListeners() {
       if (el._blurListenersAttached) return; // Avoid duplicate listeners
       el._blurListenersAttached = true;
 
-      el.addEventListener("mouseenter", () => {
-        hoveredElements.add(el);
-        el.style.filter = ""; // Remove blur on hover
+      el.addEventListener("mouseover", (e) => {
+        // If the hovered target spans the full row width, it's the empty space wrapper.
+        // The actual chat bubble represents a smaller percentage of the total row width.
+        if (e.target.offsetWidth > el.offsetWidth * 0.65) {
+          el.style.filter = "blur(10px) grayscale(100%)";
+          hoveredElements.delete(el);
+        } else {
+          hoveredElements.add(el);
+          el.style.filter = "blur(0px) grayscale(0%)";
+        }
       });
 
-      el.addEventListener("mouseleave", () => {
-        hoveredElements.delete(el);
-        el.style.filter = "blur(6px)"; // Re-blur when cursor leaves
+      el.addEventListener("mouseout", (e) => {
+        if (!el.contains(e.relatedTarget)) {
+          hoveredElements.delete(el);
+          el.style.filter = "blur(10px) grayscale(100%)"; // Re-blur when cursor leaves
+        }
       });
     });
 }

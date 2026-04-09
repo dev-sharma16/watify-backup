@@ -952,7 +952,7 @@ p {
 #main.blurProfile header img,
 #main.blurUserNames header .x78zum5 ._ao3e,
 #main.blurConversation div[role="row"] div[tabindex="-1"] {
-  filter: blur(4px) !important;
+  filter: blur(10px) grayscale(100%) !important;
   transition: filter 0.2s ease-in-out;
 }
 /* #main.blurConversation div[role="row"] div[tabindex="-1"] { */
@@ -982,7 +982,7 @@ p {
 #main.blurProfile header img:hover,
 #main.blurUserNames header .x78zum5 ._ao3e:hover,
 #main.blurConversation div[role="row"] div[tabindex="-1"]:hover {
-  filter: blur(0px) !important;
+  filter: blur(0px) grayscale(0%) !important;
 }
 
 .form-select {
