@@ -970,6 +970,21 @@ p {
   color: #fff !important;
 }
 
+.blurMessages ._ak1r .copyable-text {
+  color: #686868 !important;
+  transition: color 0.2s ease-in-out;
+}
+
+.blurMessages ._ak1r .copyable-text:hover {
+  color: #fff !important;
+}
+
+/* Fix: Don't override input box text color — let WhatsApp theme handle it */
+#main footer .copyable-text,
+#main footer .copyable-text:hover {
+  color: unset !important;
+}
+
 .blurProfile div[role="listitem"] ._ak8h:hover,
 .blurUserNames div[role="listitem"] ._ak8q:hover,
 .blurMessages div[role="listitem"] ._ak8j:hover,
