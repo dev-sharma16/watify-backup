@@ -185,6 +185,7 @@ async function showChatBots() {
   if (chatBots.length == 0)
     chatbotTab.innerHTML = `<tr class="odd"><td valign="top" colspan="6" class="dataTables_empty">No chatbot available</td></tr>`;
   else {
+    chatbotTab.innerHTML = ""; // clear before re-render
     chatBots.forEach((chatbot, index) => {
       const chatbotEle = document.createElement("tr");
       chatbotEle.classList.add("chatbot");

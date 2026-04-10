@@ -194,6 +194,7 @@ async function showFlowcharts() {
   if (flowCharts.length == 0)
     flowChartsTab.innerHTML = `<tr class="odd"><td valign="top" colspan="6" class="dataTables_empty">No flowCharts available</td></tr>`;
   else {
+    flowChartsTab.innerHTML = ""; // clear before re-render
     flowCharts.forEach((flowCharts, index) => {
       const flowChartsEle = document.createElement("tr");
       flowChartsEle.classList.add("flowCharts");
