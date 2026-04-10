@@ -142,16 +142,30 @@ async function waitForToken() {
     }
   });
 
+  let _manageBtnTimer = null;
+
   function manageBtn(btn, action) {
     if (action === "enable") {
+      clearTimeout(_manageBtnTimer);
       btn.disabled = false;
       btn.textContent = "Send";
+      // btn.classList.remove("btn-success");
+      btn.classList.add("btn-primary");
     } else if (action === "disable") {
       btn.disabled = true;
       btn.textContent = "initiating...";
-      setTimeout(() => {
+      _manageBtnTimer = setTimeout(() => {
         btn.textContent = "Sending...";
       }, 1000);
+    } else if (action === "success") {
+      clearTimeout(_manageBtnTimer);
+      btn.disabled = false;
+      btn.textContent = "Sent";
+      // btn.classList.remove("btn-primary");
+      // btn.classList.add("btn-success");
+      _manageBtnTimer = setTimeout(() => {
+        manageBtn(btn, "enable");
+      }, 2500);
     }
   }
 
@@ -205,19 +219,21 @@ async function waitForToken() {
     const contacts = contactsRes.map((contact) => contact.phone);
     // console.log(contacts, "contacts");
     if (!contacts) {
+      manageBtn(sendBtn, "enable");
       alert("No contacts found in this group");
       return;
     }
 
     formData.append("contacts", contacts);
 
-    const token = await getToken();;
+    const token = await getToken();
     // console.log(token, "token");
 
     formData.append("token", token);
 
     const userPlan = await fetchUserPlan(token);
     if (userPlan && userPlan.msg == "Plan Expired") {
+      manageBtn(sendBtn, "enable");
       alert(
         "Your plan has expired, please renew your plan to continue using the service"
       );
@@ -228,12 +244,14 @@ async function waitForToken() {
       Number(userPlan.bulk_msg_limit) - Number(userPlan.bulkSend);
 
     if (sendLimit <= 0) {
+      manageBtn(sendBtn, "enable");
       alert(
         `You have reached your daily limit of ${userPlan.bulk_msg_limit} messages, you can not send any more bulk messages`
       );
       return;
     }
     if (sendLimit < contacts.length) {
+      manageBtn(sendBtn, "enable");
       alert(
         `You have reached your daily limit of ${
           userPlan.bulk_msg_limit
@@ -246,6 +264,7 @@ async function waitForToken() {
 
     const saveBulk = await saveCampaign(formData);
     if (!saveBulk) {
+      manageBtn(sendBtn, "enable");
       alert("Unable to send campaign");
       return;
     }
@@ -288,6 +307,9 @@ async function waitForToken() {
     // console.log("|bulkData|", bulkData);
 
     notify(chrome.runtime, { sendMsg: "BulkCamp", value: payload });
+
+    // Show success state — no alert() to avoid popup losing focus/closing
+    manageBtn(sendBtn, "success");
   }
 
   async function handelShootMsg(event) {
@@ -306,6 +328,7 @@ async function waitForToken() {
 
     const userPlan = await fetchUserPlan(token);
     if (userPlan && userPlan.msg == "Plan Expired") {
+      manageBtn(btn, "enable");
       alert(
         "Your plan has expired, please renew your plan to continue using the service"
       );
@@ -315,6 +338,7 @@ async function waitForToken() {
     const sendLimit = Number(userPlan.msg_limit) - Number(userPlan.totalSend);
 
     if (sendLimit <= 1) {
+      manageBtn(btn, "enable");
       alert(
         `You have reached your daily limit of ${userPlan.msg_limit} messages, you can not send any more messages`
       );
@@ -328,6 +352,7 @@ async function waitForToken() {
 
     const saveShootMsg = await saveCampaign(formData);
     if (!saveShootMsg) {
+      manageBtn(btn, "enable");
       alert("Unable to send campaign");
       return;
     }
@@ -335,8 +360,6 @@ async function waitForToken() {
     const payload = Object.fromEntries(formData.entries());
 
     payload["slug"] = JSON.parse(saveShootMsg).slug;
-
-    
 
     // if (payload.shootMsgMedia.size > 0) {
     //   const { file, _, fileType, filename } = await fileToBase64(
@@ -368,6 +391,9 @@ async function waitForToken() {
     // console.log("|sendMsgData|", sendMsgData);
 
     notify(chrome.runtime, { sendMsg: "ShootMsg", value: payload });
+
+    // Same pattern as bulk — show "Sent" then reset to "Send" after 2.5s
+    manageBtn(btn, "success");
   }
 
   const bulkSendForm = document.querySelector("#bulkSendForm");
