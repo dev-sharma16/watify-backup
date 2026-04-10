@@ -201,10 +201,9 @@ window.addEventListener("message", async (event) => {
   }
 
   if (event.data.manageUiForward) {
-    const { ui, value } = event.data.manageUiForward;
-    if (ui === "darkMode") toggleTheme(false, value);
-    else manageBlur(ui, value);
-  }
+  // handled by bundle.js — ignore in index.js
+  return;
+}
 
   await waitForToken();
   if (!location.href.includes("web.whatsapp.com")) return;
@@ -304,12 +303,26 @@ async function notifyForTemplate() {
   } catch (e) {}
 }
 
-// ✅ CHANGE 2: Load the built bundle.js directly. 
-// Since bundle.js already has `@wppconnect/wa-js` bundled via Webpack, 
-// we don't need to load wppconnect-wa.js separately anymore.
-if (location.href.includes("web.whatsapp.com")) {
+// Inject inject.js first
+const injectScript = document.createElement("script");
+injectScript.src = chrome.runtime.getURL("inject.js");
+injectScript.onload = () => {
+  injectScript.remove();
+  
+  // Then inject bundle.js after
   const bundleScript = document.createElement("script");
   bundleScript.src = chrome.runtime.getURL("bundle.js");
   bundleScript.onload = () => bundleScript.remove();
   document.documentElement.appendChild(bundleScript);
-}
+};
+document.documentElement.appendChild(injectScript);
+
+// ✅ CHANGE 2: Load the built bundle.js directly. 
+// Since bundle.js already has `@wppconnect/wa-js` bundled via Webpack, 
+// we don't need to load wppconnect-wa.js separately anymore.
+// if (location.href.includes("web.whatsapp.com")) {
+//   const bundleScript = document.createElement("script");
+//   bundleScript.src = chrome.runtime.getURL("bundle.js");
+//   bundleScript.onload = () => bundleScript.remove();
+//   document.documentElement.appendChild(bundleScript);
+// }

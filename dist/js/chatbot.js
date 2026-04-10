@@ -79,10 +79,8 @@ svg.addEventListener("click", reloadBot);
 
 async function reloadBot() {
   svg.classList.add("spin", "disabled");
-await waitForToken();
-  // await fetchChatBots();
-  showChatBots()
-  svg.querySelector(".refreshContactGroups svg");
+  await waitForToken();
+  await showChatBots();                   // ← await added
   svg.classList.remove("spin", "disabled");
 
   const contactRefreshText = chatbot.querySelector(".contactRefreshText");
@@ -97,7 +95,7 @@ await waitForToken();
   notifyForBot();
 }
 
-reloadBot();
+// reloadBot();
 
 async function chatBotAPI(payload) {
   try {
@@ -196,7 +194,7 @@ async function showChatBots() {
 }
 
 function initChatbotHandler() {
-  // showChatBots();
+  showChatBots();
   chatBotListeners();
 }
 
