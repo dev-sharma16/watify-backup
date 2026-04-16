@@ -81,6 +81,7 @@ function applyBlurToAll() {
 }
 
 function attachHoverListeners() {
+  const app = document.querySelector("#app");
   document
     .querySelectorAll("#main div[role='row'] div[tabindex='-1']")
     .forEach(el => {
@@ -88,6 +89,8 @@ function attachHoverListeners() {
       el._blurListenersAttached = true;
 
       el.addEventListener("mouseover", (e) => {
+        if (!app.classList.contains("blurConversation")) return;
+
         // If the hovered target spans the full row width, it's the empty space wrapper.
         // The actual chat bubble represents a smaller percentage of the total row width.
         if (e.target.offsetWidth > el.offsetWidth * 0.65) {
@@ -100,6 +103,8 @@ function attachHoverListeners() {
       });
 
       el.addEventListener("mouseout", (e) => {
+        if (!app.classList.contains("blurConversation")) return;
+
         if (!el.contains(e.relatedTarget)) {
           hoveredElements.delete(el);
           el.style.filter = "blur(10px) grayscale(100%)"; // Re-blur when cursor leaves
