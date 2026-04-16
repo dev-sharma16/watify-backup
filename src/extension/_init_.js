@@ -3,6 +3,24 @@ import { getUserInfo, setUserInfo } from "../../dist/js/userInfo";
 import { sendMsg } from "./sendMsg";
 import { sleep } from "./sleep";
 
+if (window._watifyListenerInitialized) {
+  console.log("⚠️ Listener already initialized, skipping...");
+} else {
+  window._watifyListenerInitialized = true;
+
+  window.addEventListener("message", async (event) => {
+    const message = event.data;
+
+    if (message?.type === "shootMsg") {
+      await shootMsg(message.payload);
+    }
+
+    if (message?.type === "shootBulkCamp") {
+      await shootBulkCamp(message.payload);
+    }
+  });
+}
+
 function getToken() {
   return new Promise((resolve) => {
     const id = Math.random().toString(36).slice(2);
@@ -98,68 +116,69 @@ function _init_(WPP) {
   }
 }
 
-async function shootBulkCamp(message) {
-  console.log(message, "shootBulkCamp");
-  let send = 0;
-  let failed = 0;
-  try {
-    const numbers = message.contacts.split(",");
-    // ✅ FIX: always get token before use, not just reference it
-    const token = await waitForToken();
+// async function shootBulkCamp(message) {
+//   console.log(message, "shootBulkCamp");
+//   let send = 0;
+//   let failed = 0;
+//   try {
+//     const numbers = message.contacts.split(",");
+//     // ✅ FIX: always get token before use, not just reference it
+//     const token = await waitForToken();
 
-    for (const number of numbers) {
-      const isSent = await sendMsg(message, number.trim());
-      if (isSent) send++;
-      else failed++;
-      await sleep(2500);
-    }
+//     for (const number of numbers) {
+//       const isSent = await sendMsg(message, number.trim());
+//       if (isSent) send++;
+//       else failed++;
+//       await sleep(2500);
+//     }
 
-    window.postMessage(
-      {
-        updateBulkCamp: {
-          saveBulkAnalytics: 1,
-          slug: message.slug,
-          total: numbers.length,
-          send,
-          failed,
-          token: token,
-        },
-      },
-      "*"
-    );
-  } catch (error) {
-    console.log("error on shootBulkCamp", error);
-  }
-}
+//     window.postMessage(
+//       {
+//         updateBulkCamp: {
+//           saveBulkAnalytics: 1,
+//           slug: message.slug,
+//           total: numbers.length,
+//           send,
+//           failed,
+//           token: token,
+//         },
+//       },
+//       "*"
+//     );
+//   } catch (error) {
+//     console.log("error on shootBulkCamp", error);
+//   }
+// }
 
-async function shootMsg(message) {
-  // ✅ FIX: token fetched correctly before use
-  const token = await waitForToken();
-  let send = 0;
-  let failed = 0;
-  try {
-    const number = message.contacts + "@c.us";
-    const isSent = await sendMsg(message, number);
-    if (isSent) send++;
-    else failed++;
+// async function shootMsg(message) {
+//   console.log("💥 shootMsg FINAL CALL", Date.now());
+//   // ✅ FIX: token fetched correctly before use
+//   const token = await waitForToken();
+//   let send = 0;
+//   let failed = 0;
+//   try {
+//     const number = message.contacts + "@c.us";
+//     const isSent = await sendMsg(message, number);
+//     if (isSent) send++;
+//     else failed++;
 
-    window.postMessage(
-      {
-        updateShootMsg: {
-          saveShootMsgAnalytics: 1,
-          slug: message.slug,
-          total: 1,
-          send,
-          failed,
-          token: token,
-        },
-      },
-      "*"
-    );
-  } catch (error) {
-    console.log("error on shootMsg", error);
-  }
-}
+//     window.postMessage(
+//       {
+//         updateShootMsg: {
+//           saveShootMsgAnalytics: 1,
+//           slug: message.slug,
+//           total: 1,
+//           send,
+//           failed,
+//           token: token,
+//         },
+//       },
+//       "*"
+//     );
+//   } catch (error) {
+//     console.log("error on shootMsg", error);
+//   }
+// }
 
 function manageActiveChat() {
   const userStatus = getUserInfo()?.status || {};
@@ -168,4 +187,5 @@ function manageActiveChat() {
   if (userStatus.blurConversation) manageBlur("blurConversation", true);
 }
 
-export { _init_, shootBulkCamp, shootMsg, manageActiveChat };
+// export { _init_, shootBulkCamp, shootMsg, manageActiveChat };
+export { _init_, manageActiveChat };

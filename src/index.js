@@ -73,13 +73,19 @@ async function loginUser(phone, name) {
 
 async function saveAnalytics(data) {
   console.log("Index analytics-->", data);
+
   const res = await fetch("https://watify.io/fun/extFun/manageBulk", {
     method: "POST",
     body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
   });
-  console.log("Index analytics-->", res.text());
-  return await res.text();
+
+  // ✅ READ ONLY ONCE
+  const text = await res.text();
+
+  console.log("Index analytics response-->", text);
+
+  return text;
 }
 
 async function fetchChatBots(token) {
@@ -192,83 +198,164 @@ async function convertUrlToFile(mediaUrl) {
   }
 }
 
-window.addEventListener("message", async (event) => {
-  // ✅ CHANGE 1: Reply to token requests from inject.js (MAIN world can't use chrome.*)
-  if (event.data?._getToken) {
-    const token = await getToken();
-    window.postMessage({ _tokenReply: event.data._getToken, token }, "*");
-    return;
-  }
+// ✅ Prevent multiple listener registration (FINAL FIX)
+if (!window._indexMessageListenerAdded) {
+  window._indexMessageListenerAdded = true;
 
-  if (event.data.manageUiForward) {
-  // handled by bundle.js — ignore in index.js
-  return;
+  window.addEventListener("message", async (event) => {
+
+    // ✅ Token bridge (keep this always working)
+    if (event.data?._getToken) {
+      const token = await getToken();
+      window.postMessage({ _tokenReply: event.data._getToken, token }, "*");
+      return;
+    }
+
+    if (event.data.manageUiForward) return;
+
+    await waitForToken();
+    if (!location.href.includes("web.whatsapp.com")) return;
+
+    console.log("🟢 INDEX LISTENER HIT", Date.now(), event.data);
+
+    // ============================
+    // BULK CAMP (PROTECTED)
+    // ============================
+    if (event.data.updateBulkCamp) {
+      if (window._bulkRunning) return; // 🚨 BLOCK duplicate
+      window._bulkRunning = true;
+
+      try {
+        const token = await getToken();
+        await waitForToken();
+
+        const res = await saveAnalytics(event.data.updateBulkCamp);
+        const data = JSON.parse(res);
+        const campData = event.data.updateBulkCamp;
+
+        if (data.status == 200) {
+          try {
+            chrome.runtime.sendMessage({ type: "updateBulkCamp", data: campData });
+          } catch (e) {}
+
+          saveAnalytics({
+            saveAnalytics: 1,
+            slug: campData.slug,
+            total: campData.total,
+            send: campData.send,
+            failed: campData.failed,
+            sender: "bulk_messenger",
+            token,
+          });
+        }
+      } catch (e) {
+        console.log("Bulk error:", e);
+      }
+
+      setTimeout(() => (window._bulkRunning = false), 1000);
+    }
+
+    // ============================
+    // SHOOT MSG (PROTECTED)
+    // ============================
+    else if (event.data.updateShootMsg) {
+
+      // 🚨 GLOBAL DUPLICATE BLOCKER
+      if (window._lastShootSlug === event.data.updateShootMsg.slug) {
+        console.log("⛔ Duplicate updateShootMsg blocked in index.js");
+        return;
+      }
+    
+      window._lastShootSlug = event.data.updateShootMsg.slug;
+    
+      console.log("✅ Processing updateShootMsg ONCE");
+    
+      const res = await saveAnalytics(event.data.updateShootMsg);
+      const token = await getToken();
+      const data = JSON.parse(res);
+      const campData = event.data.updateShootMsg;
+    
+      if (data.status == 200) {
+        try {
+          chrome.runtime.sendMessage({
+            type: "updateShootMsg",
+            data: campData
+          });
+        } catch (e) {}
+      
+        // saveAnalytics({
+        //   saveAnalytics: 1,
+        //   slug: campData.slug,
+        //   total: campData.total,
+        //   send: campData.send,
+        //   failed: campData.failed,
+        //   sender: "shoot_msg",
+        //   token,
+        // });
+      }
+    
+      // reset after short delay
+      setTimeout(() => {
+        window._lastShootSlug = null;
+      }, 1500);
+    }
+
+    // ============================
+    // OTHER FLOWS (UNCHANGED)
+    // ============================
+    else if (event.data.loginUser) {
+      loginUser(event.data.loginUser.phone, event.data.loginUser.name);
+    }
+
+    else if (event.data.fetchChatBots) {
+      let chatBots = await fetchChatBots(event.data.fetchChatBots);
+      window.postMessage({ message: { chatBots } }, "*");
+    }
+
+    else if (event.data.fetchFlowCharts) {
+      let flowCharts = await fetchFlowCharts(event.data.fetchFlowCharts);
+      window.postMessage({ message: { flowCharts } }, "*");
+    }
+
+    else if (event?.data?.messageTemplates) {
+      await waitForToken();
+      const token = await getToken();
+      let templates = await fetchMessageTemplate(token);
+      window.postMessage({ message: { templates } }, "*");
+    }
+
+    else if (event.data.updateChatBot) {
+      await saveAnalytics(event.data.updateChatBot);
+    }
+
+    else if (event.data.updateFlowChart) {
+      await saveAnalytics(event.data.updateFlowChart);
+    }
+
+    else if (event.data.sendSingleMsgTemplate) {
+      let formData = event.data.sendSingleMsgTemplate.formData;
+      let template = event.data.sendSingleMsgTemplate.template;
+
+      let newFormData = new FormData();
+      for (const key in formData) {
+        newFormData.append(key, formData[key]);
+      }
+
+      let saveShootMsg = await saveCampaign(newFormData);
+      saveShootMsg = JSON.parse(saveShootMsg);
+      if (saveShootMsg.status != 200) return;
+
+      const sendMsgData = {
+        contacts: formData.shootMsgPhone,
+        caption: template["caption"],
+        media: event.data.sendSingleMsgTemplate.media,
+        slug: saveShootMsg.slug,
+      };
+
+      window.postMessage({ message: { shootSingleMsg: sendMsgData } }, "*");
+    }
+  });
 }
-
-  await waitForToken();
-  if (!location.href.includes("web.whatsapp.com")) return;
-  console.log("EVENT DATA1 ________________________________________________________=>", event.data);
-
-  if (event.data.updateBulkCamp) {
-    const token = await getToken();
-    await waitForToken();
-    const res = await saveAnalytics(event.data.updateBulkCamp);
-    const data = JSON.parse(res);
-    const campData = event.data.updateBulkCamp;
-    if (data.status == 200) {
-      try { chrome.runtime.sendMessage({ type: "updateBulkCamp", data: campData }); } catch (e) {}
-      saveAnalytics({
-        saveAnalytics: 1, slug: campData.slug, total: campData.total,
-        send: campData.send, failed: campData.failed, sender: "bulk_messenger", token,
-      });
-    }
-  } else if (event.data.updateShootMsg) {
-    const res = await saveAnalytics(event.data.updateShootMsg);
-    const token = await getToken();
-    const data = JSON.parse(res);
-    const campData = event.data.updateShootMsg;
-    if (data.status == 200) {
-      try { chrome.runtime.sendMessage({ type: "updateShootMsg", data: campData }); } catch (e) {}
-      saveAnalytics({
-        saveAnalytics: 1, slug: campData.slug, total: campData.total,
-        send: campData.send, failed: campData.failed, sender: "shoot_msg", token,
-      });
-    }
-  } else if (event.data.loginUser) {
-    loginUser(event.data.loginUser.phone, event.data.loginUser.name);
-  } else if (event.data.fetchChatBots) {
-    let chatBots = await fetchChatBots(event.data.fetchChatBots);
-    window.postMessage({ message: { chatBots } }, "*");
-  } else if (event.data.fetchFlowCharts) {
-    let flowCharts = await fetchFlowCharts(event.data.fetchFlowCharts);
-    window.postMessage({ message: { flowCharts } }, "*");
-  } else if (event?.data?.messageTemplates) {
-    console.log("EVENT DATA2 ________________________________________________________=>", event.data);
-    await waitForToken();
-    const token = await getToken();
-    let templates = await fetchMessageTemplate(token);
-    window.postMessage({ message: { templates } }, "*");
-  } else if (event.data.updateChatBot) {
-    await saveAnalytics(event.data.updateChatBot);
-  } else if (event.data.updateFlowChart) {
-    await saveAnalytics(event.data.updateFlowChart);
-  } else if (event.data.sendSingleMsgTemplate) {
-    let formData = event.data.sendSingleMsgTemplate.formData;
-    let template = event.data.sendSingleMsgTemplate.template;
-    let newFormData = new FormData();
-    for (const key in formData) { newFormData.append(key, formData[key]); }
-    let saveShootMsg = await saveCampaign(newFormData);
-    saveShootMsg = JSON.parse(saveShootMsg);
-    if (saveShootMsg.status != 200) return;
-    const sendMsgData = {
-      contacts: formData.shootMsgPhone,
-      caption: template["caption"],
-      media: event.data.sendSingleMsgTemplate.media,
-      slug: saveShootMsg.slug,
-    };
-    window.postMessage({ message: { shootSingleMsg: sendMsgData } }, "*");
-  }
-});
 
 document.addEventListener("DOMContentLoaded", async () => {
   await waitForToken();

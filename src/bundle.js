@@ -13,8 +13,8 @@ const WPP = require("@wppconnect/wa-js");
 
 const {
   _init_,
-  shootBulkCamp,
-  shootMsg,
+  // shootBulkCamp,
+  // shootMsg,
   manageActiveChat,
 } = require("./extension/_init_");
 const { manageBlur, toggleTheme } = require("../dist/js/tools");
@@ -136,107 +136,171 @@ waitForWPP((WPP) => {
   });
 });
 
-window.addEventListener("message", async (event) => {
-  if (event.origin !== "https://web.whatsapp.com") return;
+// ✅ Prevent multiple listener registration (CRITICAL FIX)
+if (!window._mainMessageListenerAdded) {
+  console.log("🟢 LISTENER HIT", Date.now());
+  window._mainMessageListenerAdded = true;
 
-  try {
-    if (event.data.action === "triggerWebhookFunction") {
-      const body = event.data.body;
-      let trigger_client_id = body.client_encoded == 1
-        ? atob(body.client_id)
-        : body.client_id;
+  window.addEventListener("message", async (event) => {
+    if (event.origin !== "https://web.whatsapp.com") return;
 
-      if (!trigger_client_id) return;
-      if (!trigger_client_id.includes("@"))
-        trigger_client_id = trigger_client_id + "@c.us";
+    try {
+      // 🔥 DEBUG (remove later)
+      console.log("📩 MESSAGE LISTENER HIT");
 
-      try {
-        if (body.action === "flowcharts") {
-          checkMsgInFlowcharts(body.trigger_key, trigger_client_id);
-        } else if (body.action === "chatbots") {
-          checkMsgInChatBot(body.trigger_key, trigger_client_id);
-        } else if (body.action === "sendSingleMsgTemplate") {
-          const template = availableTemplates.find(
-            (d) => d.temp_slug == body.template_id
-          );
-          if (template) {
-            const msgData = { caption: template.caption, template_id: body.template_id };
-            if (template.media !== "") msgData.media = template.media;
-            await sendSingleMsgTemplate(msgData, trigger_client_id.split("@")[0]);
-          }
+      // ==============================
+      // WEBHOOK HANDLING
+      // ==============================
+      if (event.data.action === "triggerWebhookFunction") {
+        const body = event.data.body;
+
+        let trigger_client_id =
+          body.client_encoded == 1
+            ? atob(body.client_id)
+            : body.client_id;
+
+        if (!trigger_client_id) return;
+
+        if (!trigger_client_id.includes("@")) {
+          trigger_client_id = trigger_client_id + "@c.us";
         }
-      } catch (error) {
-        console.log("Webhook error in bundle.js:", error);
+
+        try {
+          if (body.action === "flowcharts") {
+            checkMsgInFlowcharts(body.trigger_key, trigger_client_id);
+          } else if (body.action === "chatbots") {
+            checkMsgInChatBot(body.trigger_key, trigger_client_id);
+          } else if (body.action === "sendSingleMsgTemplate") {
+            const template = availableTemplates.find(
+              (d) => d.temp_slug == body.template_id
+            );
+
+            if (template) {
+              const msgData = {
+                caption: template.caption,
+                template_id: body.template_id,
+              };
+
+              if (template.media !== "") {
+                msgData.media = template.media;
+              }
+
+              await sendSingleMsgTemplate(
+                msgData,
+                trigger_client_id.split("@")[0]
+              );
+            }
+          }
+        } catch (error) {
+          console.log("Webhook error in bundle.js:", error);
+        }
       }
-    }
 
-    const message = event.data.message;
-    if (!message) return;
+      // ==============================
+      // MAIN MESSAGE HANDLING
+      // ==============================
+      const message = event.data.message;
+      if (!message) return;
 
-    if (message.manageUi) {
-      const ui = message.manageUi.ui;
-      if (ui === "darkMode") toggleTheme(false, message.manageUi.value);
-      else manageBlur(ui, message.manageUi.value);
-    }
+      // ✅ SIMPLE DEDUPE (based on timestamp already present)
+const key = message?.value?.slug || message?.slug || message?.time || message?.timestamp;
 
-    if (message.sendMsg) {
-      if (message.sendMsg === "BulkCamp") handleBulkCamp(message);
-      if (message.sendMsg === "ShootMsg") handleShootMsg(message);
-    }
-
-    if (message.saveToken) {
-      // ✅ FIX: No chrome.storage.local here! index.js handled it.
-      if (activeChatBots.length === 0)
-        window.postMessage({ fetchChatBots: message.saveToken }, "*");
-      if (activeFlowCharts.length === 0)
-        window.postMessage({ fetchFlowCharts: message.saveToken }, "*");
-      if (availableTemplates.length === 0)
-        window.postMessage({ messageTemplates: message.saveToken }, "*");
-    }
-
-    if (message.chatBots) {
-      activeChatBots = message.chatBots;
-      console.log("activeChatBots changed", activeChatBots);
-    }
-
-    if (message.fetchChatBots) {
-      // ✅ FIX #3: was using undeclared `token` variable — now always fetched
-      const token = await getToken();
-      window.postMessage({ fetchChatBots: token }, "*");
-    }
-
-    if (message.flowCharts) {
-      activeFlowCharts = message.flowCharts;
-      console.log("activeFlowCharts changed", activeFlowCharts);
-    }
-
-    if (message.fetchFlowCharts) {
-      const token = await getToken();
-      window.postMessage({ fetchFlowCharts: token }, "*");
-    }
-
-    if (message.messageTemplates) {
-      const token = await getToken();
-      window.postMessage({ templates: token }, "*");
-    }
-
-    if (message.templates) {
-      availableTemplates = message.templates;
-      console.log("availableTemplates changed", availableTemplates);
-    }
-
-    if (message.shootSingleMsg) {
-      console.log("shootSingleMsg", message.shootSingleMsg);
-      shootMsg(message.shootSingleMsg);
-    }
-
-    if (message.setUserPlan) {
-      userPlan = message.setUserPlan;
-    }
-  } catch (error) {
-    // silent — event handler errors must not crash
+if (key) {
+  if (window._lastMsgKey === key) {
+    console.log("⛔ Duplicate blocked (simple fix)");
+    return;
   }
-});
+
+  window._lastMsgKey = key;
+}
+
+      // UI handling
+      if (message.manageUi) {
+        const ui = message.manageUi.ui;
+
+        if (ui === "darkMode") {
+          toggleTheme(false, message.manageUi.value);
+        } else {
+          manageBlur(ui, message.manageUi.value);
+        }
+      }
+
+      // 🚀 MAIN SEND LOGIC (ONLY ONE FLOW NOW)
+      if (message.sendMsg) {
+        console.log("🚀 sendMsg trigger:", message.sendMsg, Date.now());
+            
+        if (message.sendMsg === "BulkCamp") {
+          console.log("📦 BulkCamp called");
+          handleBulkCamp(message);
+        }
+      
+        if (message.sendMsg === "ShootMsg") {
+          console.log("🎯 ShootMsg called");
+          handleShootMsg(message);
+        }
+      }
+
+      // ==============================
+      // TOKEN / DATA SYNC
+      // ==============================
+      if (message.saveToken) {
+        if (activeChatBots.length === 0) {
+          window.postMessage({ fetchChatBots: message.saveToken }, "*");
+        }
+
+        if (activeFlowCharts.length === 0) {
+          window.postMessage({ fetchFlowCharts: message.saveToken }, "*");
+        }
+
+        if (availableTemplates.length === 0) {
+          window.postMessage({ messageTemplates: message.saveToken }, "*");
+        }
+      }
+
+      if (message.chatBots) {
+        activeChatBots = message.chatBots;
+        console.log("activeChatBots changed", activeChatBots);
+      }
+
+      if (message.fetchChatBots) {
+        const token = await getToken();
+        window.postMessage({ fetchChatBots: token }, "*");
+      }
+
+      if (message.flowCharts) {
+        activeFlowCharts = message.flowCharts;
+        console.log("activeFlowCharts changed", activeFlowCharts);
+      }
+
+      if (message.fetchFlowCharts) {
+        const token = await getToken();
+        window.postMessage({ fetchFlowCharts: token }, "*");
+      }
+
+      if (message.messageTemplates) {
+        const token = await getToken();
+        window.postMessage({ templates: token }, "*");
+      }
+
+      if (message.templates) {
+        availableTemplates = message.templates;
+        console.log("availableTemplates changed", availableTemplates);
+      }
+
+      // ❌ REMOVED DUPLICATE FLOW (IMPORTANT)
+      // if (message.shootSingleMsg) {
+      //   shootMsg(message.shootSingleMsg);
+      // }
+
+      if (message.setUserPlan) {
+        userPlan = message.setUserPlan;
+      }
+
+    } catch (error) {
+      console.log("Listener error:", error);
+    }
+  });
+}
 
 // window.WPP.on("chat.active_chat", manageActiveChat);
 
@@ -403,10 +467,22 @@ async function checkMsgInFlowcharts(message, from) {
 // });
 
 const handleBulkCamp = (payload) => {
+  console.log("📦 handleBulkCamp ENTER", Date.now());
+
+  if (window._bulkInProgress) {
+    console.log("⛔ Bulk already in progress");
+    return;
+  }
+
+  window._bulkInProgress = true;
+
   const templateData = availableTemplates.find(
     (d) => d.temp_slug == payload.value["messageTemplates"]
   );
-  if (!templateData) return;
+  if (!templateData) {
+    window._bulkInProgress = false;
+    return;
+  }
 
   const bulkData = {
     contacts: payload.value["contacts"],
@@ -414,10 +490,17 @@ const handleBulkCamp = (payload) => {
     media: templateData.media !== "" ? templateData.media : "",
     slug: payload.value["bulkSlug"],
   };
+
   shootBulkCamp(bulkData);
+
+  setTimeout(() => {
+    window._bulkInProgress = false;
+  }, 1500);
 };
 
 const handleShootMsg = (payload) => {
+  console.log("🔥 handleShootMsg ENTER", Date.now());
+
   const templateData = availableTemplates.find(
     (d) => d.temp_slug == payload.value["messageTemplates"]
   );
@@ -429,7 +512,18 @@ const handleShootMsg = (payload) => {
     media: templateData.media !== "" ? templateData.media : "",
     slug: payload.value["slug"],
   };
-  shootMsg(sendMsgData);
+
+  // ✅ delegate to inject.js ONLY
+  window.postMessage(
+    {
+      action: "triggerWebhookFunction",
+      body: {
+        action: "sendSingleMsgTemplate", // or custom action if needed
+        ...sendMsgData,
+      },
+    },
+    "*"
+  );
 };
 
 // ✅ User info polling — unchanged, was already correct

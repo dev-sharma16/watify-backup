@@ -1,6 +1,8 @@
 // Bridge between page ↔ extension
 
-// Listen from page (bundle.js)
+// ==============================
+// PAGE → EXTENSION
+// ==============================
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
 
@@ -23,26 +25,61 @@ window.addEventListener("message", (event) => {
     });
   }
 
-   // ✅ NEW: handle token save request from bundle.js (MAIN world can't call chrome.storage)
+  // ✅ handle token save request from bundle.js
   if (event.data._saveToken) {
     chrome.storage.local.set({ watifyToken: event.data._saveToken });
   }
 });
 
-// Listen from popup/background
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // Handle getUserInfo from popup
-  if (request.type === "getUserInfo") {
-    chrome.storage.local.get(["userInfo"], (result) => {
-      sendResponse({ userInfo: result.userInfo || null });
-    });
-    return true; // keep channel open for async sendResponse
-  }
 
-  // ✅ THE MISSING BRIDGE: forward { message } payloads from popup into the page
-  // popup calls chrome.tabs.sendMessage(tabId, { message: { manageUi/saveToken/sendMsg/... } })
-  // inject.js and bundle.js listen for window.postMessage({ message: ... }) in the page
-  if (request.message) {
-    window.postMessage({ message: request.message }, "*");
-  }
-});
+// ==============================
+// EXTENSION → PAGE (MAIN FIX HERE)
+// ==============================
+
+// ✅ Prevent duplicate listener registration
+if (!window._contentListenerAdded) {
+  window._contentListenerAdded = true;
+
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
+    // 🔍 DEBUG LOG
+    console.log("📩 content.js received:", request);
+
+    // Handle getUserInfo from popup
+    if (request.type === "getUserInfo") {
+      chrome.storage.local.get(["userInfo"], (result) => {
+        sendResponse({ userInfo: result.userInfo || null });
+      });
+      return true; // keep async response open
+    }
+
+    // 🚀 MAIN FIX: prevent duplicate forwarding
+    if (request.message) {
+
+      const currentMsg = JSON.stringify(request.message);
+
+      // 🚨 Block duplicate message
+      if (window._lastForwardedMessage === currentMsg) {
+        console.log("⛔ Duplicate message blocked in content.js");
+        return;
+      }
+
+      // Save last message
+      window._lastForwardedMessage = currentMsg;
+
+      console.log("📤 Forwarding message to page:", request.message);
+
+      window.postMessage(
+        {
+          message: request.message,
+        },
+        "*"
+      );
+
+      // Reset after short delay
+      setTimeout(() => {
+        window._lastForwardedMessage = null;
+      }, 500);
+    }
+  });
+}

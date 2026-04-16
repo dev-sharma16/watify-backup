@@ -141,15 +141,53 @@ async function sendMsg(data, number) {
       if (ok) send++; else failed++;
       await sleep(2500);
     }
+    // window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, token } }, "*");
+    if (window._bulkUpdateSent) return;
+
+    window._bulkUpdateSent = true;
+
     window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, token } }, "*");
+
+    setTimeout(() => {
+      window._bulkUpdateSent = false;
+    }, 1000);
   }
 
   async function shootMsg(message) {
     const token = await waitForToken();
     let send = 0, failed = 0;
+
     const ok = await sendMsg(message, message.contacts + "@c.us");
     if (ok) send++; else failed++;
-    window.postMessage({ updateShootMsg: { saveShootMsgAnalytics: 1, slug: message.slug, total: 1, send, failed, token } }, "*");
+
+    // 🚨 BLOCK duplicate updateShootMsg
+    if (window._shootUpdateSent) {
+      console.log("⛔ Duplicate updateShootMsg blocked");
+      return;
+    }
+
+    window._shootUpdateSent = true;
+
+    console.log("📤 Sending updateShootMsg");
+
+    window.postMessage(
+      {
+        updateShootMsg: {
+          saveShootMsgAnalytics: 1,
+          slug: message.slug,
+          total: 1,
+          send,
+          failed,
+          token,
+        },
+      },
+      "*"
+    );
+
+    // reset after delay
+    setTimeout(() => {
+      window._shootUpdateSent = false;
+    }, 1000);
   }
 
   // ── chatbot ───────────────────────────────────────────────────
