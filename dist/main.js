@@ -309,7 +309,7 @@ async function waitForToken() {
     notify(chrome.runtime, { sendMsg: "BulkCamp", value: payload });
 
     // Show success state — no alert() to avoid popup losing focus/closing
-    manageBtn(sendBtn, "success");
+    // manageBtn(sendBtn, "success");
   }
 
   async function handelShootMsg(event) {
@@ -393,7 +393,7 @@ async function waitForToken() {
     notify(chrome.runtime, { sendMsg: "ShootMsg", value: payload });
 
     // Same pattern as bulk — show "Sent" then reset to "Send" after 2.5s
-    manageBtn(btn, "success");
+    // manageBtn(btn, "success");
   }
 
   const bulkSendForm = document.querySelector("#bulkSendForm");

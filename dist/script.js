@@ -190,17 +190,43 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.type === "initPopup") {
     initPopup(request.data);
   }
+  // if (request.type === "updateBulkCamp") {
+  //   const data = request.data;
+  //   alert(`Bulk Camp Sent Successfully, Sent-> ${data.send}, Failed-> ${data.failed}`);
+  //   const form = document.getElementById("bulkSendForm");
+  //   form.reset();
+  //   const btn = form.querySelector("#submitBtn");
+  //   btn.textContent = "Send";
+  //   btn.disabled = false;
+  // }
   if (request.type === "updateBulkCamp") {
     const data = request.data;
     alert(`Bulk Camp Sent Successfully, Sent-> ${data.send}, Failed-> ${data.failed}`);
     const form = document.getElementById("bulkSendForm");
-    form.reset();
     const btn = form.querySelector("#submitBtn");
-    btn.textContent = "Send";
+    btn.textContent = "Sent";
     btn.disabled = false;
+    setTimeout(() => {
+      form.reset();
+      btn.textContent = "Send";
+      btn.classList.add("btn-primary");
+    }, 2000);
   }
+  // if (request.type === "updateShootMsg") {
+  //   console.log("update shoot msg", request.data);
+  //   const data = request.data;
+  //   if (data.failed == 0) {
+  //     alert(`Message Sent Successfully`);
+  //   } else {
+  //     alert("Please recheck your data and try again");
+  //   }
+  //   const form = document.getElementById("shootMsgForm");
+  //   const btn = form.querySelector("#shootMsgBtn");
+  //   setTimeout(() => { btn.textContent = "Send"; }, 100);
+  //   btn.disabled = false;
+  //   form.reset();
+  // }
   if (request.type === "updateShootMsg") {
-    console.log("update shoot msg", request.data);
     const data = request.data;
     if (data.failed == 0) {
       alert(`Message Sent Successfully`);
@@ -209,8 +235,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
     const form = document.getElementById("shootMsgForm");
     const btn = form.querySelector("#shootMsgBtn");
-    setTimeout(() => { btn.textContent = "Send"; }, 100);
+    btn.textContent = data.failed == 0 ? "Sent" : "Failed";
     btn.disabled = false;
-    form.reset();
+    setTimeout(() => {
+      form.reset();
+      btn.textContent = "Send";
+      btn.classList.add("btn-primary");
+    }, 2000);
   }
 });
