@@ -162,7 +162,7 @@ async function retryFailedContact(phone, event) {
   formData.append("shootMsgCaption", "");
   const res = await fetch("https://watify.io/fun/extFun/manageBulk", { method: "POST", body: formData });
   const data = await res.json();
-  if (!data.slug) return;
+  if (!data.slug) throw new Error("No slug returned");
   notify(chrome.runtime, {
     sendMsg: "ShootMsg",
     value: { shootMsgPhone: phone, messageTemplates: templateSlug, token, slug: data.slug }
@@ -282,7 +282,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             <h2 class="h5 mb-0">Bulk Campaign Results</h2>
           </div>
           <p class="text-center mb-3 fw-bold">Sent: ${send}  |  Failed: ${failed}</p>
-          <div class="table-responsive" style="max-height: 320px">
+          <div style="max-height: 320px; overflow-y: auto">
             <table class="table table-sm table-bordered text-center mb-3">
               <thead class="table-light">
                 <tr>
@@ -309,18 +309,49 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
               </tbody>
             </table>
           </div>
-          <div class="text-center">
-            <button id="newCampaignBtn" class="btn btn-primary">+ New Campaign</button>
+          <div class="text-center d-flex justify-content-center gap-2">
+            <button id="retryAllBtn" class="btn btn-warning ${failed === 0 ? 'd-none' : ''}">
+              Retry All (${failed})
+            </button>
+            <button id="newCampaignBtn" class="btn btn-primary">
+              + New Campaign
+            </button>
           </div>
         </div>
       </div>
     `;
+
     form.querySelectorAll(".retry-btn").forEach(btn => {
       btn.addEventListener("click", (e) => retryFailedContact(btn.dataset.phone, e));
     });
     document.getElementById("newCampaignBtn").addEventListener("click", () => {
       location.reload();
     });
+    // ── INSERT THE RETRY ALL HANDLER BELOW THIS LINE ──
+    const retryAllBtn = document.getElementById("retryAllBtn");
+    if (retryAllBtn) {
+      retryAllBtn.addEventListener("click", async () => {
+        const failedPhones = results.filter(r => r.status === "failed").map(r => r.phone);
+        retryAllBtn.disabled = true;
+        retryAllBtn.textContent = "0 / " + failedPhones.length;
+        for (let i = 0; i < failedPhones.length; i++) {
+          try {
+            const fakeEvent = { target: document.createElement("button") };
+            await retryFailedContact(failedPhones[i], fakeEvent);
+          } catch (e) {
+            console.error("Retry failed for", failedPhones[i], e);
+          }
+          retryAllBtn.textContent = (i + 1) + " / " + failedPhones.length;
+          if (i < failedPhones.length - 1) {
+            const d = JSON.parse(sessionStorage.getItem("bulkRetryData") || "{}");
+            const ms = (d.delayUnit === "minutes" ? (d.delay || 2.5) * 60000 : (d.delay || 2.5) * 1000);
+            await new Promise(r => setTimeout(r, ms));
+          }
+        }
+        retryAllBtn.textContent = "✓ All Retried";
+      });
+    }
+    // ── END INSERT ──
   }
   // if (request.type === "updateShootMsg") {
   //   console.log("update shoot msg", request.data);

@@ -324,7 +324,9 @@ async function waitForToken() {
 
     // console.log("|bulkData|", bulkData);
     sessionStorage.setItem("bulkRetryData", JSON.stringify({
-      templateSlug: payload.messageTemplates
+      templateSlug: payload.messageTemplates,
+      delay: parseFloat(payload.bulkDelay) || 2.5,
+      delayUnit: payload.bulkDelayUnit || "seconds"
     }));
     notify(chrome.runtime, { sendMsg: "BulkCamp", value: payload });
 
