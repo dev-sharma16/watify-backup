@@ -175,9 +175,28 @@
                 required="">
                 <option value="">Select Templates</option>
               </select>
-              <a href="https://watify.io/message-template" target="_blank" class="text-decoration-none"><span
-                  class="text-muted fs-sm ms-2">Add New Template</span></a>
+              <a href="https://watify.io/message-template" target="_blank" class="text-decoration-none">
+                <span class="text-muted fs-sm ms-2">Add New Template</span>
+              </a>
             </div>
+            <div class="mb-3 col-6">
+              <label for="bulkDelay" class="form-label">
+                Delay Between Messages
+              </label>
+              <div class="d-flex gap-2">
+                <input type="number" id="bulkDelay" name="bulkDelay" class="form-control" value="2.5" min="0.1" step="0.1" required/>
+                <select class="form-select" id="bulkDelayUnit" name="bulkDelayUnit" style="max-width:80px">
+                  <option value="seconds" selected>sec</option>
+                  <option value="minutes">min</option>
+                </select>
+              </div>
+              </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            Send
+          </button>
+        </form>
+
             <!-- <div class="mb-3 col-12">
                 <label for="bulkCampMedia" class="form-label">Media File</label>
                 <input
@@ -202,11 +221,11 @@
                   required=""
                 ></textarea>
               </div> -->
-          </div>
+          <!-- </div>
           <button type="submit" class="btn btn-primary" id="submitBtn">
             Send
           </button>
-        </form>
+        </form> -->
         <form class="tab-pane" id="shootMsgForm">
           <div class="d-flex align-items-center gap-1 mb-3 justify-content-center">
             <i class="bi bi-send text-primary fs-5 lead pe-1 me-2"></i>

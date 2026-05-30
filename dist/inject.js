@@ -138,10 +138,10 @@ async function sendMsg(data, number) {
     const numbers = message.contacts.split(",");
     for (const number of numbers) {
       if(window._stopBulk) break;
+      if(results.length > 0) await sleep(message.delay || 2500);
       const ok = await sendMsg(message, number.trim());
       results.push({ phone: number.trim(), status: ok ? "success" : "failed" });
       if (ok) send++; else failed++; 
-      await sleep(2500);
     }
     window._stopBulk = false;
     // window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, results, token } }, "*");
@@ -288,7 +288,13 @@ async function sendMsg(data, number) {
   function handleBulkCamp(payload) {
     const t = availableTemplates.find((d) => d.temp_slug == payload.value["messageTemplates"]);
     if (!t) return;
-    shootBulkCamp({ contacts: payload.value["contacts"], caption: t.caption, media: t.media || "", slug: payload.value["bulkSlug"] });
+    let delay = 2500;
+    if (payload.value["bulkDelay"]) {
+      const val = parseFloat(payload.value["bulkDelay"]);
+      const unit = payload.value["bulkDelayUnit"] || "seconds";
+      delay = unit === "minutes" ? val * 60000 : val * 1000;
+    }
+    shootBulkCamp({ contacts: payload.value["contacts"], caption: t.caption, media: t.media || "", slug: payload.value["bulkSlug"], delay });
   }
 
   function handleShootMsg(payload) {

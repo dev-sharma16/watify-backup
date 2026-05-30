@@ -275,40 +275,44 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const { results, send, failed } = request.data;
     const form = document.getElementById("bulkSendForm");
     form.innerHTML = `
-      <div class="d-flex align-items-center gap-1 mb-3 justify-content-center">
-        <i class="bi bi-check-circle text-success fs-5 lead pe-1 me-2"></i>
-        <h2 class="h5 mb-0">Bulk Campaign Results</h2>
-      </div>
-      <p class="text-center mb-3 fw-bold">Sent: ${send}  |  Failed: ${failed}</p>
-      <div class="table-responsive" style="max-height: 320px">
-        <table class="table table-sm table-bordered text-center mb-3">
-          <thead class="table-light">
-            <tr>
-              <th style="width:40px">#</th>
-              <th>Phone Number</th>
-              <th style="width:90px">Status</th>
-              <th style="width:90px">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${results.map((r, i) => `
-              <tr>
-                <td>${i+1}</td>
-                <td>${r.phone}</td>
-                <td class="${r.status === 'success' ? 'text-success' : 'text-danger'} fw-bold">
-                  ${r.status === 'success' ? '✓ Sent' : '✗ Failed'}
-                </td>
-                <td>${r.status === 'failed' 
-                  ? `<button class="btn btn-sm btn-outline-primary retry-btn" data-phone="${r.phone}">Retry</button>` 
-                  : ''}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div class="text-center">
-        <button id="newCampaignBtn" class="btn btn-primary">+ New Campaign</button>
+      <div class="row">
+        <div class="col-12">
+          <div class="d-flex align-items-center gap-1 mb-3 justify-content-center">
+            <i class="bi bi-check-circle text-success fs-5 lead pe-1 me-2"></i>
+            <h2 class="h5 mb-0">Bulk Campaign Results</h2>
+          </div>
+          <p class="text-center mb-3 fw-bold">Sent: ${send}  |  Failed: ${failed}</p>
+          <div class="table-responsive" style="max-height: 320px">
+            <table class="table table-sm table-bordered text-center mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Phone Number</th>
+                  <th style="width:90px">Status</th>
+                  <th style="width:90px">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${results.map((r, i) => `
+                  <tr>
+                    <td>${i+1}</td>
+                    <td>${r.phone}</td>
+                    <td class="${r.status === 'success' ? 'text-success' : 'text-danger'} fw-bold">
+                      ${r.status === 'success' ? '✓ Sent' : '✗ Failed'}
+                    </td>
+                    <td>${r.status === 'failed' 
+                      ? `<button class="btn btn-sm btn-outline-primary retry-btn" data-phone="${r.phone}">Retry</button>` 
+                      : ''}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="text-center">
+            <button id="newCampaignBtn" class="btn btn-primary">+ New Campaign</button>
+          </div>
+        </div>
       </div>
     `;
     form.querySelectorAll(".retry-btn").forEach(btn => {
