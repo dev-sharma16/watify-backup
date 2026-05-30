@@ -134,19 +134,22 @@ async function sendMsg(data, number) {
   // ── bulk / shoot ──────────────────────────────────────────────
   async function shootBulkCamp(message) {
     const token = await waitForToken();
-    let send = 0, failed = 0;
+    let  results = [], send = 0, failed = 0;
     const numbers = message.contacts.split(",");
     for (const number of numbers) {
+      if(window._stopBulk) break;
       const ok = await sendMsg(message, number.trim());
-      if (ok) send++; else failed++;
+      results.push({ phone: number.trim(), status: ok ? "success" : "failed" });
+      if (ok) send++; else failed++; 
       await sleep(2500);
     }
-    // window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, token } }, "*");
+    window._stopBulk = false;
+    // window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, results, token } }, "*");
     if (window._bulkUpdateSent) return;
 
     window._bulkUpdateSent = true;
 
-    window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, token } }, "*");
+    window.postMessage({ updateBulkCamp: { saveBulkAnalytics: 1, slug: message.slug, total: numbers.length, send, failed, results, token } }, "*");
 
     setTimeout(() => {
       window._bulkUpdateSent = false;
@@ -357,6 +360,10 @@ async function sendMsg(data, number) {
   }
 
   if (event.origin !== "https://web.whatsapp.com") return;
+    if(event.data.type == "stopBulkCamp"){
+      window._stopBulk = true;
+      return;
+    }
     try {
       // if (event.data.action === "triggerWebhookFunction") {
       //   const body = event.data.body;

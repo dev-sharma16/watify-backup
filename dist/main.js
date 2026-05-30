@@ -211,6 +211,24 @@ async function waitForToken() {
     let sendBtn = bulkSendForm.querySelector("#submitBtn");
     manageBtn(sendBtn, "disable");
 
+    let stopBtn = document.getElementById("stopBulkBtn");
+    if (!stopBtn) {
+      stopBtn = document.createElement("button");
+      stopBtn.id = "stopBulkBtn";
+      stopBtn.className = "btn btn-danger ms-2";
+      stopBtn.textContent = "Stop";
+      stopBtn.type = "button";
+      sendBtn.parentNode.appendChild(stopBtn);
+      stopBtn.addEventListener("click", async () => {
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        await chrome.tabs.sendMessage(tab.id, { action: "stopBulkCamp" });
+        stopBtn.classList.add("d-none");
+        sendBtn.textContent = "Stopped";
+        sendBtn.disabled = true;
+      });
+    }
+    stopBtn.classList.remove("d-none");
+
     const formData = new FormData(bulkSendForm);
     // console.log(Object.fromEntries(formData.entries()), "formData");
 
@@ -305,7 +323,9 @@ async function waitForToken() {
     // }
 
     // console.log("|bulkData|", bulkData);
-
+    sessionStorage.setItem("bulkRetryData", JSON.stringify({
+      templateSlug: payload.messageTemplates
+    }));
     notify(chrome.runtime, { sendMsg: "BulkCamp", value: payload });
 
     // Show success state — no alert() to avoid popup losing focus/closing
@@ -389,7 +409,9 @@ async function waitForToken() {
     // }
 
     // console.log("|sendMsgData|", sendMsgData);
-
+    sessionStorage.setItem("bulkRetryData", JSON.stringify({
+      templateSlug: payload.messageTemplates
+    }))
     notify(chrome.runtime, { sendMsg: "ShootMsg", value: payload });
 
     // Same pattern as bulk — show "Sent" then reset to "Send" after 2.5s

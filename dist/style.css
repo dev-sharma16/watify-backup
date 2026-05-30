@@ -1117,3 +1117,7 @@ p {
   opacity: 0.45 !important;
   cursor: not-allowed !important;
 }
+
+#bulkResultsPanel { padding: 10px 0; }
+#bulkResultsPanel .table td { vertical-align: middle; }
+.retry-btn { font-size: 0.8rem; }

@@ -150,6 +150,65 @@ async function initPopup(data) {
   showTools();
 }
 
+async function retryFailedContact(phone, event) {
+  const retryData = JSON.parse(sessionStorage.getItem("bulkRetryData") || "{}");
+  const templateSlug = retryData.templateSlug;
+  if (!templateSlug) return;
+  const token = localStorage.getItem("watifyToken");
+  const formData = new FormData();
+  formData.append("token", token);
+  formData.append("shootMsgPhone", phone);
+  formData.append("messageTemplates", templateSlug);
+  formData.append("shootMsgCaption", "");
+  const res = await fetch("https://watify.io/fun/extFun/manageBulk", { method: "POST", body: formData });
+  const data = await res.json();
+  if (!data.slug) return;
+  notify(chrome.runtime, {
+    sendMsg: "ShootMsg",
+    value: { shootMsgPhone: phone, messageTemplates: templateSlug, token, slug: data.slug }
+  });
+  // Update the retry button to show "Retrying..."
+  event.target.textContent = "Sending...";
+  event.target.disabled = true;
+}
+
+// function createResultsPanel() {
+//   const panel = document.createElement("div");
+//   panel.id = "bulkResultsPanel";
+//   panel.className = "tab-pane active";
+//   panel.innerHTML = `
+//     <div class="d-flex align-items-center gap-1 mb-3 justify-content-center">
+//       <i class="bi bi-check-circle text-success fs-5 lead pe-1 me-2"></i>
+//       <h2 class="h5 mb-0">Bulk Campaign Results</h2>
+//     </div>
+//     <p id="resultsSummary" class="text-center mb-3"></p>
+//     <div class="table-responsive" style="max-height: 350px">
+//       <table class="table table-sm table-bordered text-center mb-3">
+//         <thead class="table-light">
+//           <tr>
+//             <th style="width:40px">#</th>
+//             <th>Phone Number</th>
+//             <th style="width:100px">Status</th>
+//             <th style="width:100px">Action</th>
+//           </tr>
+//         </thead>
+//         <tbody id="resultsBody"></tbody>
+//       </table>
+//     </div>
+//     <div class="text-center">
+//       <button id="resultsBackBtn" class="btn btn-secondary">← Back to Campaign</button>
+//     </div>
+//   `;
+  
+//   // Back button: hide panel, show form again
+//   panel.querySelector("#resultsBackBtn").addEventListener("click", () => {
+//     panel.classList.add("d-none");
+//     document.getElementById("bulkSendForm").classList.remove("d-none");
+//   });
+  
+//   return panel;
+// }
+
 // ✅ DOMContentLoaded with retry logic
 document.addEventListener("DOMContentLoaded", () => {
   console.log("chrome runtime -->", chrome.runtime.id);
@@ -199,18 +258,65 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   //   btn.textContent = "Send";
   //   btn.disabled = false;
   // }
+  // if (request.type === "updateBulkCamp") {
+  //   const data = request.data;
+  //   alert(`Bulk Camp Sent Successfully, Sent-> ${data.send}, Failed-> ${data.failed}`);
+  //   const form = document.getElementById("bulkSendForm");
+  //   const btn = form.querySelector("#submitBtn");
+  //   btn.textContent = "Sent";
+  //   btn.disabled = false;
+  //   setTimeout(() => {
+  //     form.reset();
+  //     btn.textContent = "Send";
+  //     btn.classList.add("btn-primary");
+  //   }, 2000);
+  // }
   if (request.type === "updateBulkCamp") {
-    const data = request.data;
-    alert(`Bulk Camp Sent Successfully, Sent-> ${data.send}, Failed-> ${data.failed}`);
+    const { results, send, failed } = request.data;
     const form = document.getElementById("bulkSendForm");
-    const btn = form.querySelector("#submitBtn");
-    btn.textContent = "Sent";
-    btn.disabled = false;
-    setTimeout(() => {
-      form.reset();
-      btn.textContent = "Send";
-      btn.classList.add("btn-primary");
-    }, 2000);
+    form.innerHTML = `
+      <div class="d-flex align-items-center gap-1 mb-3 justify-content-center">
+        <i class="bi bi-check-circle text-success fs-5 lead pe-1 me-2"></i>
+        <h2 class="h5 mb-0">Bulk Campaign Results</h2>
+      </div>
+      <p class="text-center mb-3 fw-bold">Sent: ${send}  |  Failed: ${failed}</p>
+      <div class="table-responsive" style="max-height: 320px">
+        <table class="table table-sm table-bordered text-center mb-3">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Phone Number</th>
+              <th style="width:90px">Status</th>
+              <th style="width:90px">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${results.map((r, i) => `
+              <tr>
+                <td>${i+1}</td>
+                <td>${r.phone}</td>
+                <td class="${r.status === 'success' ? 'text-success' : 'text-danger'} fw-bold">
+                  ${r.status === 'success' ? '✓ Sent' : '✗ Failed'}
+                </td>
+                <td>${r.status === 'failed' 
+                  ? `<button class="btn btn-sm btn-outline-primary retry-btn" data-phone="${r.phone}">Retry</button>` 
+                  : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-center">
+        <button id="newCampaignBtn" class="btn btn-primary">+ New Campaign</button>
+      </div>
+    `;
+    form.querySelectorAll(".retry-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => retryFailedContact(btn.dataset.phone, e));
+    });
+    document.getElementById("newCampaignBtn").addEventListener("click", () => {
+      location.reload();
+    });
   }
   // if (request.type === "updateShootMsg") {
   //   console.log("update shoot msg", request.data);

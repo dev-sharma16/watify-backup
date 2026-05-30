@@ -53,6 +53,11 @@ if (!window._contentListenerAdded) {
       return true; // keep async response open
     }
 
+    if (request.action === "stopBulkCamp") {
+      window.postMessage({ type: "stopBulkCamp" }, "*");
+      return;
+    }
+
     // 🚀 MAIN FIX: prevent duplicate forwarding
     if (request.message) {
 
