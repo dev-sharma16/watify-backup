@@ -121,10 +121,6 @@ async function sendMsg(data, number) {
   function _init_() {
     changeTheme();
     const userInfo = getUserInfoFromStorage();
-    const status = userInfo?.status || {};
-    if (status.blurUserNames) manageBlur("blurUserNames", true);
-    if (status.blurProfile) manageBlur("blurProfile", true);
-    if (status.blurMessages) manageBlur("blurMessages", true);
     if (userInfo?.userPhone?.phone) {
       window.postMessage({ loginUser: { phone: userInfo.userPhone.phone, name: userInfo.userName } }, "*");
       console.log("🔥 [inject.js] loginUser posted", userInfo.userPhone.phone);
@@ -279,10 +275,6 @@ async function sendMsg(data, number) {
   }
 
   function manageActiveChat() {
-    const status = getUserInfoFromStorage()?.status || {};
-    if (status.blurUserNames) manageBlur("blurUserNames", true);
-    if (status.blurProfile) manageBlur("blurProfile", true);
-    if (status.blurConversation) manageBlur("blurConversation", true);
   }
 
   function handleBulkCamp(payload) {

@@ -940,17 +940,20 @@ p {
 /* role="listitem" work for archived chats as well as chat list */
 
 
-.blurProfile div[role="listitem"] ._ak8h,
-.blurUserNames div[role="listitem"] ._ak8q,
-.blurMessages div[role="listitem"] ._ak8j,
-.blurProfile div[aria-label="Search results."] ._ak8h,
-.blurUserNames div[aria-label="Search results."] ._ak8q,
-.blurMessages div[aria-label="Search results."] ._ak8j,
-.blurProfile div[aria-label="Chat list"] ._ak8h,
-.blurUserNames div[aria-label="Chat list"] ._ak8q,
-.blurMessages div[aria-label="Chat list"] ._ak8j,
-#main.blurProfile header img,
-#main.blurUserNames header .x78zum5 ._ao3e,
+.blurProfile div[role="listitem"] img,
+.blurUserNames div[role="listitem"] span[dir="auto"],
+.blurMessages div[role="listitem"] span[dir="ltr"],
+.blurMessages div[role="listitem"] span[dir="rtl"],
+.blurProfile div[aria-label="Search results."] img,
+.blurUserNames div[aria-label="Search results."] span[dir="auto"],
+.blurMessages div[aria-label="Search results."] span[dir="ltr"],
+.blurMessages div[aria-label="Search results."] span[dir="rtl"],
+.blurProfile div[aria-label="Chat list"] img,
+.blurUserNames div[aria-label="Chat list"] span[dir="auto"],
+.blurMessages div[aria-label="Chat list"] span[dir="ltr"],
+.blurMessages div[aria-label="Chat list"] span[dir="rtl"],
+.blurProfile #main header img,
+.blurUserNames #main header span[data-testid="conversation-info-header-chat-title"],
 #main.blurConversation div[role="row"] div[tabindex="-1"] {
   filter: blur(10px) grayscale(100%) !important;
   transition: filter 0.2s ease-in-out;
@@ -985,17 +988,20 @@ p {
   color: unset !important;
 }
 
-.blurProfile div[role="listitem"] ._ak8h:hover,
-.blurUserNames div[role="listitem"] ._ak8q:hover,
-.blurMessages div[role="listitem"] ._ak8j:hover,
-.blurProfile div[aria-label="Search results."] ._ak8h:hover,
-.blurUserNames div[aria-label="Search results."] ._ak8q:hover,
-.blurMessages div[aria-label="Search results."] ._ak8j:hover,
-.blurProfile div[aria-label="Chat list"] ._ak8h:hover,
-.blurUserNames div[aria-label="Chat list"] ._ak8q:hover,
-.blurMessages div[aria-label="Chat list"] ._ak8j:hover,
-#main.blurProfile header img:hover,
-#main.blurUserNames header .x78zum5 ._ao3e:hover,
+.blurProfile div[role="listitem"] img:hover,
+.blurUserNames div[role="listitem"] span[dir="auto"]:hover,
+.blurMessages div[role="listitem"] span[dir="ltr"]:hover,
+.blurMessages div[role="listitem"] span[dir="rtl"]:hover,
+.blurProfile div[aria-label="Search results."] img:hover,
+.blurUserNames div[aria-label="Search results."] span[dir="auto"]:hover,
+.blurMessages div[aria-label="Search results."] span[dir="ltr"]:hover,
+.blurMessages div[aria-label="Search results."] span[dir="rtl"]:hover,
+.blurProfile div[aria-label="Chat list"] img:hover,
+.blurUserNames div[aria-label="Chat list"] span[dir="auto"]:hover,
+.blurMessages div[aria-label="Chat list"] span[dir="ltr"]:hover,
+.blurMessages div[aria-label="Chat list"] span[dir="rtl"]:hover,
+.blurProfile #main header img:hover,
+.blurUserNames #main header span[data-testid="conversation-info-header-chat-title"]:hover,
 #main.blurConversation div[role="row"] div[tabindex="-1"]:hover {
   filter: blur(0px) grayscale(0%) !important;
 }
