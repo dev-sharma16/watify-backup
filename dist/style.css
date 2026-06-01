@@ -955,8 +955,12 @@ p {
 .blurProfile #main header img,
 .blurUserNames #main header span[data-testid="conversation-info-header-chat-title"],
 #main.blurConversation div[role="row"] div[tabindex="-1"] {
-  filter: blur(10px) grayscale(100%) !important;
-  transition: filter 0.2s ease-in-out;
+  filter: blur(12px) grayscale(100%) !important;
+  transition: filter 0.3s ease-in-out;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 /* #main.blurConversation div[role="row"] div[tabindex="-1"] { */
   /* filter: blur(6px) !important; */

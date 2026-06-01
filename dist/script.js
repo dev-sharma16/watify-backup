@@ -317,6 +317,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
               + New Campaign
             </button>
           </div>
+          <div class="text-center mt-2">
+            <a href="https://watify.io/dashboard" target="_blank" class="text-decoration-none small">See Detailed Report →</a>
+          </div>
         </div>
       </div>
     `;
@@ -369,6 +372,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   // }
   if (request.type === "updateShootMsg") {
     const data = request.data;
+    if (data.phone) {
+      const btn = document.querySelector(`#bulkSendForm .retry-btn[data-phone="${data.phone}"]`);
+      if (btn) {
+        const tr = btn.closest("tr");
+        if (data.failed == 0) {
+          tr.querySelector("td:nth-child(3)").className = "text-success fw-bold";
+          tr.querySelector("td:nth-child(3)").textContent = "✓ Sent";
+          tr.querySelector("td:nth-child(4)").innerHTML = "";
+        } else {
+          btn.textContent = "Retry";
+          btn.disabled = false;
+        }
+        return;
+      }
+    }
     if (data.failed == 0) {
       alert(`Message Sent Successfully`);
     } else {

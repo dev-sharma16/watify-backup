@@ -178,6 +178,7 @@ async function sendMsg(data, number) {
           send,
           failed,
           token,
+          phone: message.contacts
         },
       },
       "*"
