@@ -151,26 +151,57 @@ async function initPopup(data) {
 }
 
 async function retryFailedContact(phone, event) {
-  const retryData = JSON.parse(sessionStorage.getItem("bulkRetryData") || "{}");
-  const templateSlug = retryData.templateSlug;
-  if (!templateSlug) return;
-  const token = localStorage.getItem("watifyToken");
-  const formData = new FormData();
-  formData.append("token", token);
-  formData.append("shootMsgPhone", phone);
-  formData.append("messageTemplates", templateSlug);
-  formData.append("shootMsgCaption", "");
-  const res = await fetch("https://watify.io/fun/extFun/manageBulk", { method: "POST", body: formData });
-  const data = await res.json();
-  if (!data.slug) throw new Error("No slug returned");
-  notify(chrome.runtime, {
-    sendMsg: "ShootMsg",
-    value: { shootMsgPhone: phone, messageTemplates: templateSlug, token, slug: data.slug }
-  });
-  // Update the retry button to show "Retrying..."
-  event.target.textContent = "Sending...";
-  event.target.disabled = true;
+  try {
+    const retryData = JSON.parse(sessionStorage.getItem("bulkRetryData") || "{}");
+    const templateSlug = retryData.templateSlug;
+    if (!templateSlug) {
+      alert("Please check your number or try again later");
+      return;
+    }
+    const token = localStorage.getItem("watifyToken");
+    const formData = new FormData();
+    formData.append("token", token);
+    formData.append("shootMsgPhone", phone);
+    formData.append("messageTemplates", templateSlug);
+    formData.append("shootMsgCaption", "");
+    const res = await fetch("https://watify.io/fun/extFun/manageBulk", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!data.slug) throw new Error("No slug returned");
+    notify(chrome.runtime, {
+      sendMsg: "ShootMsg",
+      value: { shootMsgPhone: phone, messageTemplates: templateSlug, token, slug: data.slug }
+    });
+    event.target.textContent = "Sending...";
+    event.target.disabled = true;
+  } catch (e) {
+    console.error("Retry failed:", e);
+    alert("Please check your number or try again later");
+    event.target.textContent = "Retry";
+    event.target.disabled = false;
+  }
 }
+
+// async function retryFailedContact(phone, event) {
+//   const retryData = JSON.parse(sessionStorage.getItem("bulkRetryData") || "{}");
+//   const templateSlug = retryData.templateSlug;
+//   if (!templateSlug) return;
+//   const token = localStorage.getItem("watifyToken");
+//   const formData = new FormData();
+//   formData.append("token", token);
+//   formData.append("shootMsgPhone", phone);
+//   formData.append("messageTemplates", templateSlug);
+//   formData.append("shootMsgCaption", "");
+//   const res = await fetch("https://watify.io/fun/extFun/manageBulk", { method: "POST", body: formData });
+//   const data = await res.json();
+//   if (!data.slug) throw new Error("No slug returned");
+//   notify(chrome.runtime, {
+//     sendMsg: "ShootMsg",
+//     value: { shootMsgPhone: phone, messageTemplates: templateSlug, token, slug: data.slug }
+//   });
+//   // Update the retry button to show "Retrying..."
+//   event.target.textContent = "Sending...";
+//   event.target.disabled = true;
+// }
 
 // function createResultsPanel() {
 //   const panel = document.createElement("div");
@@ -343,6 +374,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             await retryFailedContact(failedPhones[i], fakeEvent);
           } catch (e) {
             console.error("Retry failed for", failedPhones[i], e);
+            alert("Retry failed for " + failedPhones[i] + ". Please check your number or try again later");
           }
           retryAllBtn.textContent = (i + 1) + " / " + failedPhones.length;
           if (i < failedPhones.length - 1) {
