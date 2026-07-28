@@ -1,14 +1,3 @@
-// ✅ FIX #1: webVersionCache MUST be set before anything else touches WPP.
-// The original code set this AFTER require(), which is why isReady/isInjected
-// were all false — WPP had already initialized without the cache config.
-console.log("At load time WPP:", window.WPP);
-window.WPP = window.WPP || {};
-window.WPP.webVersionCache = {
-  type: "remote",
-  remotePath:
-    "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1033041060-alpha.html",
-};
-
 const WPP = require("@wppconnect/wa-js");
 
 const {
@@ -99,7 +88,7 @@ async function waitForToken() {
 // }
 
 function waitForWPP(callback) {
-  if (window.WPP && window.WPP.webpack) {
+  if (window.WPP && window.WPP.loader) {
     callback(window.WPP);
   } else {
     setTimeout(() => waitForWPP(callback), 300);
@@ -109,15 +98,15 @@ function waitForWPP(callback) {
 waitForWPP((WPP) => {
   console.log("🔥 WPP FOUND — attaching events");
 
-  WPP.webpack.onInjected(() => {
+  WPP.loader.onInjected(() => {
     console.log("🔥 onInjected fired");
   });
 
-  WPP.webpack.onReady(() => {
+  WPP.loader.onReady(() => {
     console.log("🔥 onReady fired");
   });
 
-  WPP.webpack.onFullReady(() => {
+  WPP.loader.onFullReady(() => {
     console.log("🔥 onFullReady fired");
 
     const userIdObj = WPP.conn?.getMyUserId();

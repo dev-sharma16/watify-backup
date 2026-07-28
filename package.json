@@ -25,7 +25,7 @@
     "webpack-dev-server": "^5.1.0"
   },
   "dependencies": {
-    "@wppconnect/wa-js": "^3.23.2",
+    "@wppconnect/wa-js": "4.4.2",
     "node_env": "^0.0.3",
     "playwright-chromium": "^1.44.0",
     "url-loader": "^4.1.1",

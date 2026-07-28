@@ -17,7 +17,7 @@
       console.error("❌ [inject.js] WPP never appeared after 50 attempts");
       return;
     }
-    if (window.WPP && window.WPP.webpack) {
+    if (window.WPP && window.WPP.loader) {
       console.log("🔥 [inject.js] WPP found on attempt", attempts, "version=", window.WPP.version);
       callback();
     } else {
@@ -426,9 +426,9 @@ async function sendMsg(data, number) {
   });
 
   // ── WPP lifecycle ─────────────────────────────────────────────
-  window.WPP.webpack.onInjected(() => console.log("🔥 [inject.js] onInjected fired"));
-  window.WPP.webpack.onReady(() => console.log("🔥 [inject.js] onReady fired"));
-  window.WPP.webpack.onFullReady(() => {
+  window.WPP.loader.onInjected(() => console.log("🔥 [inject.js] onInjected fired"));
+  window.WPP.loader.onReady(() => console.log("🔥 [inject.js] onReady fired"));
+  window.WPP.loader.onFullReady(() => {
     console.log("🔥 [inject.js] onFullReady fired");
     try { userPhone = window.WPP.conn.getMyUserId()._serialized.toString(); } catch (e) {}
     const interval = setInterval(() => {
